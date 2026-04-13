@@ -103,7 +103,7 @@
         #system-menu.active { right: 0; visibility: visible; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; }
 
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 600px; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; }
         .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
         
         .status-pill { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
@@ -111,6 +111,12 @@
         .status-warn { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
         .status-crit { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 
+        /* v16.2 PM SCHEDULER STYLES */
+        .pm-card { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;}
+        .pm-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .pm-action-text { font-size: 12px; color: var(--warning); font-weight: bold; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 6px; border-left: 3px solid var(--warning);}
+        .pm-ok-text { font-size: 12px; color: var(--success); font-weight: bold; }
+        
         @page { size: landscape; margin: 10mm; }
         @media print { 
             body { background: white; -webkit-print-color-adjust: exact; color-adjust: exact; font-size: 10px;} 
@@ -141,7 +147,7 @@
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
             <h2 style="margin:0 0 5px 0; color:var(--text); font-weight: 800; font-size: 24px;">RCC CHILLER DIAGNOSTICS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">HVAC ENGINEERING v1.1</p>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">HVAC ENGINEERING v16.2</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
             <button class="btn-guest" onclick="guestLogin()">👀 PROCEED AS VIEWER</button>
@@ -249,6 +255,7 @@
         
         <div class="admin-only" style="margin-top: 20px;">
             <h4 style="color:var(--accent); margin: 0 0 10px 0; font-size: 11px; text-transform: uppercase;">Engineering Tools</h4>
+            <button class="btn" style="width:100%; margin-bottom:10px; background: var(--warning); color: white;" onclick="openPMModal()">🔧 PM SCHEDULER</button>
             <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateShiftReport()">📋 SMART CHILLER REPORT</button>
         </div>
         
@@ -265,6 +272,15 @@
         <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE</button>
     </div>
 
+    <div id="pm-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; color:var(--text); font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">🔧 TOTAL PRODUCTIVE MAINTENANCE (TPM)</h2>
+        <p style="font-size: 11px; color: var(--text-dim); margin-top: 0; margin-bottom: 15px;">Tracking staggered PM schedules per unit. Resetting a clock does NOT affect historical data.</p>
+        
+        <div id="pm-content" class="modal-content-box" style="background: transparent; border: none; padding: 0; max-height: 500px;">
+            </div>
+        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px;" onclick="closeModals()">CLOSE SCHEDULER</button>
+    </div>
+
     <script>
         // --- 1. SYSTEM CONFIGURATION ---
         const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
@@ -274,6 +290,10 @@
         let rawCloudData = []; 
         let isEngineer = false; let period = 'daily'; let charts = {}; let currentUser = "GUEST"; let idleTimer; 
         
+        // v16.2 PM Tracker Initialization
+        let pmData = JSON.parse(localStorage.getItem('rcc_chiller_pm_dates')) || {};
+        const CHILLER_LIST = ['Line 1 Chiller', 'Line 2 Chiller', 'Line 3 Chiller', 'Line 4 Chiller', 'Line 5 Chiller', 'Line 6 Chiller', 'Support Chiller'];
+
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
 
@@ -316,6 +336,9 @@
 
             loadNotes(); if(!charts.amp) initCharts(); fetchData(); fetchComments(); setupRealtime(); resetIdleTimer();
             if(localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-mode'); updateChartColors(); }
+            
+            // Trigger PM check on load
+            if(isEngineer) checkPMAlerts();
         }
 
         function resetIdleTimer() { clearTimeout(idleTimer); if(isEngineer) idleTimer = setTimeout(lockdownSystem, 30 * 60 * 1000); }
@@ -344,18 +367,13 @@
 
         async function fetchData() {
             const { data, error } = await sb.from('chiller_logs').select('*').order('created_at', {ascending:false}).limit(1000);
-            if(data) { rawCloudData = data; } 
-            else { 
-                console.warn("Table 'chiller_logs' may not exist yet.");
-                rawCloudData = []; 
-            }
+            if(data) { rawCloudData = data; } else { rawCloudData = []; }
             processAndRender(); checkAlerts(rawCloudData);
         }
 
         function checkAlerts(data) {
             if(data.length === 0) return;
             const today = new Date().toISOString().split('T')[0];
-            // Thresholds adapted for 16-21A spec. >21A is Critical.
             const criticals = data.filter(r => r.date === today && (r.status === 'Critical' || r.amps > 21));
             const banner = document.getElementById('andon-banner');
             if(criticals.length > 0) {
@@ -380,7 +398,6 @@
         // --- 4. SAVING ---
         async function saveData() {
             const btn = document.getElementById('transmit-btn'); 
-            
             const entry = {
                 date: document.getElementById('f-date').value || new Date().toISOString().split('T')[0],
                 shift: document.getElementById('f-shift').value, 
@@ -393,17 +410,14 @@
                 comment: document.getElementById('f-comment').value,
                 created_at: new Date().toISOString()
             };
-
             if (entry.amps === 0) { alert("ALERT: Current Draw (Amps) must be recorded."); return; }
-
             btn.innerText = "UPLOADING...";
             const { error } = await sb.from('chiller_logs').insert([entry]);
             if(!error) { 
                 await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ LOG INSPECTION DATA"; }, 2000);
                 document.getElementById('f-amps').value = ''; document.getElementById('f-ewt').value = ''; document.getElementById('f-lwt').value = ''; document.getElementById('f-comment').value = '';
             } else {
-                alert("Database Error: Ensure you have created the 'chiller_logs' table in Supabase.");
-                btn.innerText = "☁️ LOG INSPECTION DATA";
+                alert("Database Error."); btn.innerText = "☁️ LOG INSPECTION DATA";
             }
         }
 
@@ -415,7 +429,6 @@
             const step = (ts) => {
                 if(!startTS) startTS = ts; const progress = Math.min((ts - startTS) / duration, 1);
                 const current = startVal + (endVal - startVal) * (1 - Math.pow(1 - progress, 4));
-                
                 el.innerText = current.toFixed(1) + suffix; 
                 if(progress < 1) window.requestAnimationFrame(step);
                 else { el.setAttribute('data-current', endVal); el.innerText = endVal.toFixed(1) + suffix; }
@@ -425,7 +438,6 @@
 
         function updateKPIs(data) {
             if(data.length === 0) return;
-            
             const uniqueChillers = new Set(data.filter(r => r.status === 'Operational').map(r => r.chiller));
             document.getElementById('kpi-online').innerText = `${uniqueChillers.size}/7`;
 
@@ -439,7 +451,6 @@
             const warnings = data.filter(r => r.status === 'Warning' || r.status === 'Critical').length;
             document.getElementById('kpi-warn').innerText = warnings;
 
-            // Updated KPI Thresholds: >21A is Red, >18A is Yellow
             const ampColor = avgAmps > 21 ? 'var(--danger)' : (avgAmps > 18 ? 'var(--warning)' : 'var(--success)');
             document.getElementById('line-amps').style.background = ampColor;
             const ampCard = document.getElementById('card-amps');
@@ -467,32 +478,16 @@
             const cleanScales = { x: { ticks: { color: '#64748b', font:{size: 10} }, grid: { display: false }, border: { display: false } }, y: { beginAtZero: true, ticks: { color: '#64748b', font:{size: 10} }, grid: { color: 'rgba(100,116,139,0.1)' }, border: { display: false } } };
             const animCfg = { duration: 600, easing: 'easeOutQuart' };
 
-            charts.amp = new Chart(document.getElementById('ampChart'), { 
-                type: 'bar', data: { labels: ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Support'], datasets: [{ label: 'Current Draw (Amps)', backgroundColor: '#0ea5e9', borderRadius: 4, data: [0,0,0,0,0,0,0] }]}, 
-                options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { display: false } }, scales: cleanScales } 
-            });
-
-            charts.temp = new Chart(document.getElementById('tempChart'), { 
-                type: 'line', data: { labels: [], datasets: [{ label: 'Avg Delta T (°C)', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 3, data: [] }]}, 
-                options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { display: false } }, scales: cleanScales } 
-            });
-
-            charts.status = new Chart(document.getElementById('statusChart'), { 
-                type: 'doughnut', data: { labels: ['Operational', 'Warning', 'Maintenance', 'Offline'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#0ea5e9', '#ef4444'], borderWidth: 0, cutout:'75%' }]}, 
-                options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } } } } 
-            });
+            charts.amp = new Chart(document.getElementById('ampChart'), { type: 'bar', data: { labels: ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Support'], datasets: [{ label: 'Current Draw (Amps)', backgroundColor: '#0ea5e9', borderRadius: 4, data: [0,0,0,0,0,0,0] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { display: false } }, scales: cleanScales } });
+            charts.temp = new Chart(document.getElementById('tempChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Avg Delta T (°C)', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 3, data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { display: false } }, scales: cleanScales } });
+            charts.status = new Chart(document.getElementById('statusChart'), { type: 'doughnut', data: { labels: ['Operational', 'Warning', 'Maintenance', 'Offline'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#0ea5e9', '#ef4444'], borderWidth: 0, cutout:'75%' }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } } } } });
         }
 
         function updateCharts(data) {
             if(!charts.amp || data.length === 0) return;
-
             const chillerNames = ['Line 1 Chiller', 'Line 2 Chiller', 'Line 3 Chiller', 'Line 4 Chiller', 'Line 5 Chiller', 'Line 6 Chiller', 'Support Chiller'];
-            const ampData = chillerNames.map(name => {
-                const logs = data.filter(r => r.chiller === name);
-                return logs.length > 0 ? logs[0].amps : 0; 
-            });
+            const ampData = chillerNames.map(name => { const logs = data.filter(r => r.chiller === name); return logs.length > 0 ? logs[0].amps : 0; });
             charts.amp.data.datasets[0].data = ampData;
-            // Updated thresholds: >21A is Red, >18A is Yellow
             charts.amp.data.datasets[0].backgroundColor = ampData.map(a => a > 21 ? '#ef4444' : (a > 18 ? '#f59e0b' : '#0ea5e9'));
             charts.amp.update();
 
@@ -511,18 +506,79 @@
             charts.status.update();
         }
 
-        // --- 6. SMART REPORT ENGINE ---
+        // --- 6. v16.2 TPM SCHEDULER ENGINE ---
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
 
+        function checkPMAlerts() {
+            if(Notification.permission !== "granted") return;
+            let needsPM = false;
+            const now = new Date();
+            CHILLER_LIST.forEach(chiller => {
+                let lastDate = pmData[chiller] ? new Date(pmData[chiller]) : null;
+                if(!lastDate) return; 
+                let diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+                if(diffDays >= 30) needsPM = true;
+            });
+
+            if(needsPM) {
+                new Notification("🔧 RCC Maintenance Alert", { body: "One or more chillers are due for scheduled Preventive Maintenance. Check the PM Scheduler." });
+            }
+        }
+
+        function openPMModal() {
+            document.getElementById('system-menu').classList.remove('active');
+            document.getElementById('main-overlay').style.display = 'block';
+            document.getElementById('pm-modal').style.display = 'block';
+            
+            const contentBox = document.getElementById('pm-content');
+            let html = "";
+            const now = new Date();
+
+            CHILLER_LIST.forEach(chiller => {
+                // Initialize if it doesn't exist (sets baseline to today)
+                if(!pmData[chiller]) { pmData[chiller] = now.toISOString(); localStorage.setItem('rcc_chiller_pm_dates', JSON.stringify(pmData)); }
+                
+                let lastDate = new Date(pmData[chiller]);
+                let diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+                
+                let actionReq = "No Action Required";
+                let actionClass = "pm-ok-text";
+                let btnColor = "var(--border)";
+                let btnTextCol = "var(--text)";
+
+                if(diffDays >= 365) { actionReq = "ANNUAL PM DUE: Full oil change, replace filter driers, vibration analysis."; actionClass = "pm-action-text"; btnColor = "var(--danger)"; btnTextCol = "white";}
+                else if(diffDays >= 180) { actionReq = "SEMI-ANNUAL PM DUE: Megger test motors, test crankcase heaters."; actionClass = "pm-action-text"; btnColor = "var(--warning)"; btnTextCol = "white";}
+                else if(diffDays >= 90) { actionReq = "QUARTERLY PM DUE: Wash condenser coils, check compressor oil levels, tighten electrical."; actionClass = "pm-action-text"; btnColor = "var(--warning)"; btnTextCol = "white";}
+                else if(diffDays >= 30) { actionReq = "MONTHLY PM DUE: Clean air filters, inspect belts, check sight glass."; actionClass = "pm-action-text"; btnColor = "var(--accent)"; btnTextCol = "white";}
+
+                html += `
+                <div class="pm-card">
+                    <div class="pm-header">
+                        <b style="font-size:14px; color:var(--text);">${chiller}</b>
+                        <span style="font-size:11px; color:var(--text-dim);">Last PM: <b>${diffDays} days ago</b> (${lastDate.toLocaleDateString()})</span>
+                    </div>
+                    <div class="${actionClass}">${actionReq}</div>
+                    <button class="btn" style="background:${btnColor}; color:${btnTextCol}; padding: 8px; margin-top:5px; font-size:10px;" onclick="resetPMClock('${chiller}')">MARK COMPLETED & RESET CLOCK</button>
+                </div>`;
+            });
+            contentBox.innerHTML = html;
+        }
+
+        function resetPMClock(chiller) {
+            if(confirm(`Confirm you have completed the required Preventive Maintenance for ${chiller}? This will reset its clock to 0 days.`)) {
+                pmData[chiller] = new Date().toISOString();
+                localStorage.setItem('rcc_chiller_pm_dates', JSON.stringify(pmData));
+                openPMModal(); // Refresh the modal UI instantly
+            }
+        }
+
+        // --- 7. SMART REPORT ENGINE ---
         function generateShiftReport() {
             const today = new Date().toISOString().split('T')[0];
             const todayData = rawCloudData.filter(r => r.date === today);
-            
             if(todayData.length === 0) { alert("No HVAC data recorded for today."); return; }
 
-            let highestAmpChiller = { name: "N/A", amps: 0 };
-            let worstDeltaChiller = { name: "N/A", delta: 99 }; 
-            
+            let highestAmpChiller = { name: "N/A", amps: 0 }; let worstDeltaChiller = { name: "N/A", delta: 99 }; 
             todayData.forEach(r => {
                 let dt = Math.abs(r.ewt - r.lwt);
                 if(r.amps > highestAmpChiller.amps) highestAmpChiller = { name: r.chiller, amps: r.amps, psi: r.psi };
@@ -533,100 +589,50 @@
 
             let narrative = `[ DIAGNOSTIC FINDINGS ]\n`;
             narrative += `> The fleet is operating at an average electrical load of ${avgAmps}A per unit.\n`;
-            
-            // Evaluated against new >21A Critical threshold
             if(highestAmpChiller.amps > 21) narrative += `> ⚠️ CRITICAL LOAD: ${highestAmpChiller.name} is drawing ${highestAmpChiller.amps}A. Compressor stress detected.\n`;
             else narrative += `> Highest Load: ${highestAmpChiller.name} drawing a safe ${highestAmpChiller.amps}A.\n`;
-
             if(worstDeltaChiller.delta < 3) narrative += `> ⚠️ THERMAL WARNING: ${worstDeltaChiller.name} has a dangerously low Delta-T of ${worstDeltaChiller.delta.toFixed(1)}°C, indicating poor heat exchange.\n`;
 
             let recommendation = `\n[ MAINTENANCE DIRECTIVES ]\n`;
-            if (highestAmpChiller.amps > 21) recommendation += `> Immediate operational review required on ${highestAmpChiller.name} to identify source of overload (e.g. ambient temp, condenser fouling, or refrigerant issue).\n`;
-            if (worstDeltaChiller.delta < 3) recommendation += `> Inspect condenser tubes on ${worstDeltaChiller.name} for scaling or fouling. Schedule chemical flush if necessary.\n`;
+            if (highestAmpChiller.amps > 21) recommendation += `> Immediate operational review required on ${highestAmpChiller.name} to identify source of overload.\n`;
+            if (worstDeltaChiller.delta < 3) recommendation += `> Inspect condenser tubes on ${worstDeltaChiller.name} for scaling or fouling.\n`;
             if (highestAmpChiller.amps <= 21 && worstDeltaChiller.delta >= 3) recommendation += `> Fleet is operating within normal thermodynamic and electrical limits. Continue standard PM schedule.\n`;
 
-            let reportText = `========================================\n` +
-                             ` RCC HVAC SMART DIAGNOSTICS\n` +
-                             ` DATE: ${today}\n` +
-                             `========================================\n\n` +
-                             `${narrative}${recommendation}\n`;
-
+            let reportText = `========================================\nRCC HVAC SMART DIAGNOSTICS\nDATE: ${today}\n========================================\n\n${narrative}${recommendation}\n`;
             document.getElementById('report-content').innerText = reportText;
             document.getElementById('system-menu').classList.remove('active');
-            document.getElementById('main-overlay').style.display = 'block';
-            document.getElementById('report-modal').style.display = 'block';
+            document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
         }
 
         function downloadReport() {
             const text = document.getElementById('report-content').innerText;
-            const blob = new Blob([text], { type: 'text/plain' });
-            const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = `RCC_Chiller_Report.txt`; a.click();
+            const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = `RCC_Chiller_Report.txt`; a.click();
         }
 
-        // --- 7. CHAT, THEME & EXCEL ---
+        // --- 8. EXTRAS ---
         async function fetchComments() {
             const { data } = await sb.from('live_comments').select('*').order('created_at', {ascending: true}).limit(50);
-            const box = document.getElementById('chat-box');
-            if (data) {
-                box.innerHTML = data.map(c => {
-                    const isAdmin = c.user_name.includes("Engr.") || c.user_name.includes("Admin");
-                    let del = (isEngineer || c.user_name === currentUser) ? `<button class="del-msg-btn" onclick="deleteComment('${c.id}')">✖</button>` : "";
-                    return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> ${del} <b>${c.user_name}</b> <span>${c.message}</span></div>`;
-                }).join(''); box.scrollTop = box.scrollHeight; 
-            }
+            if (data) document.getElementById('chat-box').innerHTML = data.map(c => `<div class="chat-msg" style="${c.user_name.includes("Engr.") ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> <b>${c.user_name}</b> <span>${c.message}</span></div>`).join('');
         }
+        async function sendComment() { const input = document.getElementById('chat-input'); if(input.value.trim()) { await sb.from('live_comments').insert([{ user_name: currentUser, message: input.value.trim() }]); input.value = ''; } }
         
-        async function sendComment() { 
-            const input = document.getElementById('chat-input'); const msg = input.value.trim(); 
-            if(!msg || currentUser === "GUEST TECH") return; 
-            input.value = ''; await sb.from('live_comments').insert([{ user_name: currentUser, message: msg }]); 
-        }
-
-        async function deleteComment(id) { if(confirm("Delete message?")) await sb.from('live_comments').delete().eq('id', id); }
-
         function setPeriod(p, btn) { period = p; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); processAndRender(); }
         function saveNotes() { localStorage.setItem('hvac_notes', document.getElementById('prod-notepad').value); }
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('hvac_notes') || ""; }
         function toggleMenu() { document.getElementById('system-menu').classList.toggle('active'); document.querySelector('.menu-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; }
         
-        function toggleTheme() { 
-            document.body.classList.toggle('dark-mode'); 
-            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-            updateChartColors();
-        }
-        
-        function updateChartColors() {
-            if(charts.amp) {
-                Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b';
-                Object.values(charts).forEach(c => c.update());
-            }
-        }
-        
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); if(charts.amp){ Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'; Object.values(charts).forEach(c => c.update()); } }
         function exportExcel() {
-            if(rawCloudData.length === 0) { alert("No data to export."); return; }
-            const wsData = rawCloudData.map(r => ({
-                "Date": r.date, "Shift": r.shift, "Chiller Unit": r.chiller, "Status": r.status,
-                "Amperage Draw (A)": r.amps, "Entering Water Temp (C)": r.ewt, "Leaving Water Temp (C)": r.lwt,
-                "Delta T (C)": Math.abs(r.ewt - r.lwt).toFixed(1), "Pressure (PSI)": r.psi, "Notes": r.comment
-            }));
-            const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, "Chiller Logs");
-            XLSX.writeFile(wb, `RCC_Chiller_Diagnostics_${new Date().toISOString().split('T')[0]}.xlsx`);
+            const wsData = rawCloudData.map(r => ({ "Date": r.date, "Shift": r.shift, "Chiller": r.chiller, "Status": r.status, "Amps": r.amps, "EWT": r.ewt, "LWT": r.lwt, "Delta T": Math.abs(r.ewt - r.lwt).toFixed(1), "PSI": r.psi, "Notes": r.comment }));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Chiller Logs");
+            XLSX.writeFile(wb, `RCC_Chiller_DB.xlsx`);
         }
         
         setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
-        
         window.onload = () => { 
-            const savedUser = localStorage.getItem('rcc_user');
-            const savedRole = localStorage.getItem('rcc_role');
-            if(savedUser && savedUser !== "GUEST VIEWER") {
-                currentUser = savedUser;
-                isEngineer = (savedRole === 'admin');
-                document.getElementById('portal-overlay').style.display = 'none';
-                unlockSystem();
-            } else {
-                document.getElementById('access-code').focus(); 
-            }
+            const savedUser = localStorage.getItem('rcc_user'); const savedRole = localStorage.getItem('rcc_role');
+            if(savedUser && savedUser !== "GUEST VIEWER") { currentUser = savedUser; isEngineer = (savedRole === 'admin'); document.getElementById('portal-overlay').style.display = 'none'; unlockSystem(); } 
+            else { document.getElementById('access-code').focus(); }
             if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark-mode'); 
         };
     </script>
