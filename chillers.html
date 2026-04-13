@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Chiller Diagnostics | Secure OS</title>
+    <title>RCC Chiller Diagnostics | v17.1 Smart Timeline</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -27,14 +27,11 @@
         #andon-banner { display: none; width: 100%; background: var(--danger); color: white; text-align: center; font-weight: 800; padding: 12px; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; z-index: 9000; position: sticky; top: 0; }
 
         #portal-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s; }
-        .auth-card { background: var(--surface); padding: 50px; border-radius: 12px; border: 1px solid var(--border); width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); transform: translateY(0); transition: 0.4s; }
-        .auth-card input { width: 100%; padding: 15px; background: var(--bg); border: 2px solid var(--border); color: var(--text); font-size: 24px; text-align: center; border-radius: 8px; margin: 25px 0; letter-spacing: 8px; outline: none; font-weight: bold; transition: 0.3s; }
+        .auth-card { background: var(--surface); padding: 50px; border-radius: 12px; border: 1px solid var(--border); width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .auth-card input { width: 100%; padding: 15px; background: var(--bg); border: 2px solid var(--border); color: var(--text); font-size: 24px; text-align: center; border-radius: 8px; margin: 25px 0; letter-spacing: 8px; outline: none; font-weight: bold; }
         .auth-card input:focus { border-color: var(--accent); }
         .shake { animation: shakeError 0.4s forwards; border-color: var(--danger) !important; }
         @keyframes shakeError { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
-        .unlock { transform: scale(1.05); opacity: 0; }
-        .btn-guest { background: transparent; border: 1px solid var(--border); color: var(--text-dim); margin-top: 15px; font-size: 12px; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600;}
-        .btn-guest:hover { background: var(--bg); color: var(--text); }
 
         .cloud-status { position: fixed; top: 15px; left: 15px; font-size: 11px; display: flex; align-items: center; gap: 8px; background: var(--surface); padding: 8px 16px; border-radius: 20px; z-index: 5000; border: 1px solid var(--border); font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -48,24 +45,37 @@
         .header-title span { font-family: monospace; font-weight: 600; color: var(--accent); font-size: 12px; }
         
         .user-profile-container { grid-column: 3; display: flex; justify-content: flex-end; }
-        .user-profile { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 6px 15px 6px 15px; border-radius: 30px; border: 1px solid var(--border); }
+        .user-profile { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 6px 15px; border-radius: 30px; border: 1px solid var(--border); }
         .avatar { width: 32px; height: 32px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
-        .user-info { display: flex; flex-direction: column; text-align: right;}
-        .user-name { font-size: 13px; font-weight: 800; color: var(--text); text-transform: uppercase; }
+        .user-name { font-size: 13px; font-weight: 800; text-transform: uppercase; }
 
         .main-content { padding: 20px; max-width: 1600px; margin: auto; }
         
-        .tabs { display: flex; gap: 10px; justify-content: center; margin: 10px 0 25px 0; flex-wrap: wrap;}
+        /* THE TABS ARE BACK */
+        .tabs { display: flex; gap: 10px; justify-content: center; margin: 10px 0 15px 0; flex-wrap: wrap;}
         .tab-btn { display: flex; align-items: center; gap: 8px; padding: 10px 25px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s;}
         .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
         .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2); }
 
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .kpi-card { background: var(--surface); border: 1px solid var(--border); padding: 20px 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); position: relative;}
-        .kpi-card small { font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 5px; font-weight: 600; }
-        .kpi-card div.val { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--text);}
-        .perf-line { position: absolute; bottom: 0; left: 0; height: 4px; width: 100%; transition: 0.5s; }
+        /* CUSTOM TIME MATRIX SLIDER */
+        #custom-time-matrix { display: none; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px; background: var(--surface); padding: 15px; border: 1px solid var(--border); border-radius: 8px; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .matrix-group { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 8px 15px; border-radius: 6px; border: 1px solid var(--border); }
+        .matrix-group label { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; }
+        .matrix-group input { width: auto; background: transparent; border: none; color: var(--text); font-weight: 700; font-size: 13px; outline: none; padding: 0; margin: 0; cursor: pointer; }
 
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .kpi-card { background: var(--surface); border: 1px solid var(--border); padding: 20px 15px; border-radius: 12px; text-align: center; position: relative;}
+        .kpi-card small { font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; display: block; margin-bottom: 5px; }
+        .kpi-card div.val { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+        
+        /* REVERSE VARIANCE LOGIC FOR CHILLERS */
+        .variance { font-size: 10px; font-weight: bold; margin-top: 5px; display: inline-block; padding: 2px 6px; border-radius: 4px;}
+        .up { color: var(--success); background: rgba(16, 185, 129, 0.1); } 
+        .down { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+        .bad-up { color: var(--danger); background: rgba(239, 68, 68, 0.1); } 
+        .good-down { color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        
         .pulse-red { animation: redPulse 1.5s infinite; border: 1px solid var(--danger) !important; }
         @keyframes redPulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
@@ -79,7 +89,7 @@
 
         input, select, textarea { width: 100%; padding: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; box-sizing: border-box; margin-bottom: 5px; font-family: inherit; font-size: 13px;}
         input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
-        .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;}
+        .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 12px;}
         .btn-primary { background: var(--accent); color: white; width: 100%; }
         .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 
@@ -87,14 +97,17 @@
         th { padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-dim); text-transform: uppercase; position: sticky; top: 0; background: var(--surface); z-index: 10;}
         td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
         .admin-only { display: none; }
-        .action-cell { display: flex; justify-content: center; gap: 10px; }
         .icon-btn { background: none; border: none; font-size: 14px; cursor: pointer; opacity: 0.6; transition: 0.2s; color: var(--text);}
         .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        
+        .status-pill { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .status-ok { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .status-warn { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
+        .status-crit { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 
         .chat-container { height: 250px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
         .chat-msg { padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); position: relative; }
         .chat-msg b { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; }
-        .del-msg-btn { position: absolute; right: 5px; top: 5px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; }
 
         .fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); transition: 0.3s; }
         .fab:hover { transform: rotate(90deg); }
@@ -105,30 +118,21 @@
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; }
         .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
         
-        .status-pill { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .status-ok { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid var(--success); }
-        .status-warn { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
-        .status-crit { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-
-        /* PM SCHEDULER STYLES */
         .pm-card { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;}
-        .pm-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .pm-action-text { font-size: 12px; color: var(--warning); font-weight: bold; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 6px; border-left: 3px solid var(--warning);}
         .pm-ok-text { font-size: 12px; color: var(--success); font-weight: bold; }
-        
+
         @page { size: landscape; margin: 10mm; }
         @media print { 
             body { background: white; -webkit-print-color-adjust: exact; color-adjust: exact; font-size: 10px;} 
-            .fab, .cloud-status, .menu-overlay, #system-menu, .chat-panel, .admin-only, #admin-form-container, .tabs, #andon-banner { display: none !important; } 
+            .fab, .cloud-status, .menu-overlay, #system-menu, .chat-panel, .admin-only, #admin-form-container, .tabs, #custom-time-matrix, #andon-banner { display: none !important; } 
             .header-banner { border-bottom: 2px solid black; padding: 10px 0; margin-bottom: 15px; }
             .user-profile { border: none; background: transparent; }
             .main-content { padding: 0; max-width: 100%; }
             .kpi-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
             .kpi-card { width: 20%; padding: 10px; box-shadow: none; border: 1px solid #ccc; }
-            .kpi-card div.val { font-size: 20px; }
             .chart-row { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 15px; page-break-inside: avoid; }
             .panel { width: 48%; box-shadow: none; border: 1px solid #ccc; padding: 10px; }
-            .panel h3 { font-size: 10px; margin-bottom: 5px; }
             .panel div { height: 160px !important; } 
             #log-table-container { display: none !important; }
         }
@@ -136,7 +140,7 @@
 </head>
 <body>
 
-    <div id="andon-banner">🚨 CRITICAL AMPERAGE OVERLOAD DETECTED ON CHILLER UNIT. 🚨</div>
+    <div id="andon-banner">🚨 CRITICAL AMPERAGE OVERLOAD DETECTED. 🚨</div>
 
     <div class="cloud-status" id="cloud-status-box">
         <div id="cloud-dot" class="status-dot dot-offline"></div>
@@ -145,19 +149,19 @@
 
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
-            <h2 style="margin:0 0 5px 0; color:var(--text); font-weight: 800; font-size: 24px;">RCC CHILLER DIAGNOSTICS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">SECURE EDITION v16.3</p>
+            <h2 style="margin:0 0 5px 0; font-weight: 800; font-size: 24px;">RCC CHILLER DIAGNOSTICS</h2>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">TIME-MATRIX v17.1</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
-            <button class="btn-guest" onclick="guestLogin()">👀 PROCEED AS VIEWER</button>
+            <button class="btn-guest" onclick="guestLogin()" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:10px; width:100%; border-radius:8px; cursor:pointer;">👀 VIEW AS GUEST</button>
         </div>
     </div>
 
     <div class="header-banner">
-        <div class="header-spacer"><a href="index.html" style="text-decoration:none; color:var(--text-dim); font-size:12px; font-weight:bold;">← BACK TO HUB</a></div> 
+        <div class="header-spacer"><a href="index.html" style="text-decoration:none; color:var(--text-dim); font-size:12px; font-weight:bold;">← HUB</a></div> 
         <div class="header-title">
             <h1>RCC CHILLER DIAGNOSTICS</h1>
-            <span>THERMAL & ELECTRICAL MONITORING</span>
+            <span id="live-clock"></span>
         </div>
         <div class="user-profile-container">
             <div class="user-profile">
@@ -170,32 +174,54 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="setPeriod('daily', this)">📊 Daily Inspection</button>
-        <button class="tab-btn" onclick="setPeriod('weekly', this)">📅 Weekly Log</button>
-        <button class="tab-btn" onclick="setPeriod('monthly', this)">📈 Monthly Data</button>
-        <button class="tab-btn" onclick="setPeriod('yearly', this)">📆 Yearly YTD</button>
+        <button class="tab-btn active" onclick="setMode('daily', this)">📊 Today</button>
+        <button class="tab-btn" onclick="setMode('weekly', this)">📅 This Week</button>
+        <button class="tab-btn" onclick="setMode('monthly', this)">📈 This Month</button>
+        <button class="tab-btn" onclick="setMode('yearly', this)">📆 This Year</button>
+        <button class="tab-btn" onclick="setMode('custom', this)">🔍 Custom Date</button>
+    </div>
+
+    <div id="custom-time-matrix">
+        <div class="matrix-group">
+            <label>Mode</label>
+            <select id="custom-mode" onchange="toggleCustomInputs()">
+                <option value="range">Specific Date Range</option>
+                <option value="week">Specific Week</option>
+                <option value="month">Specific Month</option>
+            </select>
+        </div>
+        <div id="input-range" class="matrix-group">
+            <label>From</label><input type="date" id="date-start" onchange="processData()">
+            <label>To</label><input type="date" id="date-end" onchange="processData()">
+        </div>
+        <div id="input-week" class="matrix-group" style="display:none;">
+            <label>Select Week</label><input type="week" id="date-week" onchange="processData()">
+        </div>
+        <div id="input-month" class="matrix-group" style="display:none;">
+            <label>Select Month</label><input type="month" id="date-month" onchange="processData()">
+        </div>
     </div>
 
     <div class="main-content">
         <div class="kpi-grid">
-            <div class="kpi-card"><small>❄️ Chillers Online</small><div id="kpi-online" class="val" data-current="0">0/7</div><div class="perf-line" style="background: var(--accent);"></div></div>
-            <div class="kpi-card" id="card-amps"><small>⚡ Avg Amperage</small><div id="kpi-amps" class="val" data-current="0">0 A</div><div class="perf-line" id="line-amps" style="background: var(--success);"></div></div>
-            <div class="kpi-card"><small>🌡️ Peak Delta-T</small><div id="kpi-delta" class="val" data-current="0">0 °C</div><div class="perf-line" style="background: var(--warning);"></div></div>
-            <div class="kpi-card"><small>⚠️ Active Warnings</small><div id="kpi-warn" class="val" data-current="0" style="color: var(--danger);">0</div><div class="perf-line" style="background: var(--danger);"></div></div>
+            <div class="kpi-card"><small>❄️ Chillers Online</small><div id="kpi-online" class="val">0/7</div><div id="var-online" class="variance">--</div></div>
+            <div class="kpi-card" id="card-amps"><small>⚡ Avg Amperage</small><div id="kpi-amps" class="val">0 A</div><div id="var-amps" class="variance">--</div></div>
+            <div class="kpi-card"><small>🌡️ Peak Delta-T</small><div id="kpi-delta" class="val">0 °C</div><div id="var-delta" class="variance">--</div></div>
+            <div class="kpi-card"><small>⚠️ Active Warnings</small><div id="kpi-warn" class="val" style="color: var(--danger);">0</div><div id="var-warn" class="variance">--</div></div>
         </div>
 
         <div class="chart-row">
-            <div class="panel" style="grid-column: span 2;"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim); text-align: center;">Real-Time Amperage Load by Chiller Unit</h3><div style="height: 180px;"><canvas id="ampChart"></canvas></div></div>
+            <div class="panel" style="grid-column: span 2;"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim); text-align: center;">Average Amperage Load by Unit (Selected Period)</h3><div style="height: 180px;"><canvas id="ampChart"></canvas></div></div>
         </div>
 
         <div class="chart-row">
             <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Thermodynamic Variance (Delta T) Trend</h3><div style="height: 200px;"><canvas id="tempChart"></canvas></div></div>
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Fleet Condition Status</h3><div style="height: 200px;"><canvas id="statusChart"></canvas></div></div>
+            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Fleet Condition Distribution</h3><div style="height: 200px;"><canvas id="statusChart"></canvas></div></div>
         </div>
 
         <div class="chart-row admin-only" id="admin-form-container">
             <div class="panel" id="admin-form" style="grid-column: span 2; border: 1px solid var(--accent); background: rgba(14, 165, 233, 0.03);">
-                <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Daily Chiller Inspection Terminal</h3>
+                <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Data Acquisition Terminal</h3>
                 
                 <div class="admin-form-grid">
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">DATE</label><input type="date" id="f-date"></div>
@@ -207,31 +233,31 @@
                             <option>Support Chiller</option>
                         </select>
                     </div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">CONDITION STATUS</label><select id="f-status"><option>Operational</option><option>Warning</option><option>Maintenance</option><option>Offline</option></select></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">STATUS</label><select id="f-status"><option>Operational</option><option>Warning</option><option>Maintenance</option><option>Offline</option></select></div>
                     
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">CURRENT DRAW (AMPS)</label><input type="number" id="f-amps" placeholder="e.g. 18.5" step="0.1"></div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">ENTERING WATER TEMP (°C)</label><input type="number" id="f-ewt" placeholder="e.g. 12.0" step="0.1"></div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">LEAVING WATER TEMP (°C)</label><input type="number" id="f-lwt" placeholder="e.g. 7.0" step="0.1"></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">CURRENT (AMPS)</label><input type="number" id="f-amps" placeholder="e.g. 18.5" step="0.1"></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">EWT (°C)</label><input type="number" id="f-ewt" placeholder="e.g. 12.0" step="0.1"></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">LWT (°C)</label><input type="number" id="f-lwt" placeholder="e.g. 7.0" step="0.1"></div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">PRESSURE (PSI)</label><input type="number" id="f-psi" placeholder="e.g. 60" step="1"></div>
                 </div>
-                <textarea id="f-comment" placeholder="Input specific maintenance actions, anomalies, or mechanical sounds..." rows="2" style="margin-top:10px;"></textarea>
-                <button class="btn btn-primary" id="transmit-btn" onclick="saveData()" style="margin-top:10px;">☁️ LOG INSPECTION DATA</button>
+                <textarea id="f-comment" placeholder="Maintenance actions or anomalies..." rows="2" style="margin-top:10px;"></textarea>
+                <button class="btn btn-primary" id="transmit-btn" onclick="saveData()" style="margin-top:10px;">☁️ LOG INSPECTION</button>
             </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
             <div class="panel" id="log-table-container">
-                <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Chiller Inspection Log</h3>
-                <div style="overflow-y:auto; height: 400px; padding-right:5px;">
+                <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Filtered Inspection Log</h3>
+                <div style="overflow-y:auto; height: 400px;">
                     <table id="log-table">
-                        <thead><tr><th>Date</th><th>Shift</th><th>Unit</th><th>Status</th><th>Amps</th><th>EWT °C</th><th>LWT °C</th><th>ΔT</th><th style="width:25%">Notes</th><th class="admin-only">Action</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Unit</th><th>Status</th><th>Amps</th><th>EWT</th><th>LWT</th><th>ΔT</th><th class="admin-only">Action</th></tr></thead>
                         <tbody id="log-body"></tbody>
                     </table>
                 </div>
             </div>
 
             <div class="panel chat-panel">
-                <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color: var(--accent);">💬 HVAC Engineering Comms</h3>
+                <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color: var(--accent);">💬 HVAC Comms</h3>
                 <div id="chat-box" class="chat-container"></div>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="chat-input" placeholder="Type message..." style="margin:0;" onkeypress="if(event.key === 'Enter') sendComment()">
@@ -241,51 +267,51 @@
         </div>
     </div>
 
-    <div class="fab" onclick="toggleMenu()" title="System Controls">⚙️</div>
+    <div class="fab" onclick="toggleMenu()">⚙️</div>
     <div class="menu-overlay" onclick="toggleMenu()" id="main-overlay"></div>
-
     <div id="system-menu">
-        <h2 style="color: var(--text); margin-top: 0; font-size: 18px; font-weight: 800;">DIAGNOSTIC CONTROLS</h2>
-        
+        <h2 style="font-weight: 800; color: var(--text); margin-top: 0;">DIAGNOSTIC CONTROLS</h2>
         <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="toggleTheme()">🌓 TOGGLE DARK MODE</button>
         
         <div class="admin-only" style="margin-top: 20px;">
-            <h4 style="color:var(--accent); margin: 0 0 10px 0; font-size: 11px; text-transform: uppercase;">Engineering Tools</h4>
-            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="exportExcel()">🟩 EXPORT TO EXCEL (.XLSX)</button>
-            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="window.print()">🖨️ PRINT DASHBOARD (PDF)</button>
+            <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 10px;">Admin Tools</h4>
+            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="exportExcel()">🟩 EXCEL (CURRENT VIEW)</button>
+            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="window.print()">🖨️ PDF (CURRENT VIEW)</button>
             <button class="btn" style="width:100%; margin-bottom:10px; background: var(--warning); color: white;" onclick="openPMModal()">🔧 PM SCHEDULER</button>
-            <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateShiftReport()">📋 SMART CHILLER REPORT</button>
+            <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateSmartReport()">📋 TIME-MATRIX REPORT</button>
         </div>
         
-        <h4 style="color:var(--text-dim); margin: 20px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom:5px; font-size: 11px; text-transform: uppercase;">📝 HVAC Notepad</h4>
-        <textarea id="prod-notepad" placeholder="Maintenance Reminders (Auto-Saves)..." oninput="saveNotes()" style="height: 100px;"></textarea>
+        <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">📝 HVAC Notepad</h4>
+        <textarea id="prod-notepad" placeholder="Maintenance Reminders (Auto-Saves)..." oninput="saveNotes()" style="height: 100px; margin-bottom: 20px;"></textarea>
+
+        <div class="admin-only">
+            <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">🔒 Access Logs</h4>
+            <div id="access-log-display" style="font-family:monospace; font-size:10px; height:120px; overflow-y:auto; background:var(--bg); padding:10px; border-radius: 6px; border: 1px solid var(--border);"></div>
+        </div>
 
         <button class="btn" style="width:100%; margin-top:20px; background: var(--border); color: var(--text);" onclick="toggleMenu()">CLOSE MENU</button>
     </div>
 
     <div id="report-modal" class="modal">
-        <h2 style="margin:0 0 15px 0; color:var(--text); font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">📋 HVAC SMART DIAGNOSTIC REPORT</h2>
-        <div id="report-content" class="modal-content-box">Processing Diagnostics...</div>
-        <button class="btn btn-primary" onclick="downloadReport()" style="margin-bottom: 10px;">💾 DOWNLOAD REPORT (.TXT)</button>
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">📋 HVAC EXECUTIVE SUMMARY</h2>
+        <div id="report-content" class="modal-content-box">Analyzing timeframe...</div>
+        <button class="btn btn-primary" onclick="downloadReport()" style="margin-bottom: 10px;">💾 DOWNLOAD REPORT</button>
         <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE</button>
     </div>
 
     <div id="pm-modal" class="modal">
-        <h2 style="margin:0 0 15px 0; color:var(--text); font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">🔧 TOTAL PRODUCTIVE MAINTENANCE (TPM)</h2>
-        <p style="font-size: 11px; color: var(--text-dim); margin-top: 0; margin-bottom: 15px;">Tracking staggered PM schedules per unit. Resetting a clock does NOT affect historical data.</p>
-        
-        <div id="pm-content" class="modal-content-box" style="background: transparent; border: none; padding: 0; max-height: 500px;"></div>
-        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px;" onclick="closeModals()">CLOSE SCHEDULER</button>
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">🔧 HVAC TPM</h2>
+        <div id="pm-content" class="modal-content-box" style="padding:0; border:none;"></div>
+        <button class="btn" style="width:100%; margin-top: 10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE SCHEDULER</button>
     </div>
 
     <script>
-        // --- 1. SYSTEM CONFIGURATION ---
         const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3am5ic2x4ZHNzeXJpb2tjZHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDg1MDUsImV4cCI6MjA5MTIyNDUwNX0.sNFCBZoSwZS0b5eU6iBmLeTt5ru7dP8G2GYJ9hrxAFg";
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
-        let rawCloudData = []; 
-        let isEngineer = false; let period = 'daily'; let charts = {}; let currentUser = "GUEST"; let idleTimer; 
+        let rawData = []; let filteredData = []; let previousData = [];
+        let isEngineer = false; let currentUser = "GUEST"; let charts = {}; let currentMode = 'daily';
         
         let pmData = JSON.parse(localStorage.getItem('rcc_chiller_pm_dates')) || {};
         const CHILLER_LIST = ['Line 1 Chiller', 'Line 2 Chiller', 'Line 3 Chiller', 'Line 4 Chiller', 'Line 5 Chiller', 'Line 6 Chiller', 'Support Chiller'];
@@ -293,64 +319,36 @@
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
 
-        // --- 2. AUTHENTICATION ---
         async function authorize() {
-            const pin = document.getElementById('access-code').value.trim(); 
-            const card = document.getElementById('auth-card');
-            if(!pin) return triggerError(card);
-
-            try {
-                const { data } = await sb.from('user_roles').select('*').eq('pin', pin).single();
-                if(data || pin === "122022") {
-                    currentUser = data ? data.user_name : "Engr. Pinapit";
-                    isEngineer = data ? (data.role === 'Admin') : true;
-                    if (Notification.permission !== "granted") { Notification.requestPermission(); }
-                    unlockSystem(); 
-                } else { triggerError(card); }
-            } catch (err) { triggerError(card); }
+            const pin = document.getElementById('access-code').value.trim();
+            const { data } = await sb.from('user_roles').select('*').eq('pin', pin).single();
+            if(data || pin === "122022") {
+                currentUser = data ? data.user_name : "Engr. Pinapit";
+                isEngineer = data ? (data.role === 'Admin') : true;
+                unlockSystem();
+                recordAccess(`Admin: ${currentUser} Logged In (HVAC)`);
+            } else { triggerError(document.getElementById('auth-card')); }
         }
 
         function triggerError(card) { document.getElementById('access-code').value = ''; card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 400); }
-        
+
         function guestLogin() { 
-            let guestName = prompt("Enter your Name for Live Chat:"); 
-            // v16.3: Removed "Tech:" prefix to keep it perfectly clean
-            currentUser = guestName ? guestName : "GUEST VIEWER"; 
-            isEngineer = false; unlockSystem(); 
+            let name = prompt("Enter your Name for Live Chat (Optional):"); currentUser = name || "Anonymous Viewer"; isEngineer = false; 
+            unlockSystem(); recordAccess(`Viewer: ${currentUser} Joined (HVAC)`);
         }
 
         function unlockSystem() {
             document.getElementById('user-display').innerText = currentUser;
             document.getElementById('user-avatar').innerText = currentUser.charAt(0).toUpperCase();
-            document.getElementById('user-avatar').style.background = isEngineer ? "var(--accent)" : "var(--text-dim)";
-
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = isEngineer ? 'block' : 'none');
+            document.getElementById('portal-overlay').style.display = 'none';
             
-            const card = document.getElementById('auth-card'); card.classList.add('unlock');
-            document.getElementById('portal-overlay').style.opacity = '0';
-            setTimeout(() => { document.getElementById('portal-overlay').style.visibility = 'hidden'; card.classList.remove('unlock'); }, 500);
-
-            loadNotes(); if(!charts.amp) initCharts(); fetchData(); fetchComments(); setupRealtime(); resetIdleTimer();
-            if(localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-mode'); updateChartColors(); }
-            
-            if(isEngineer) checkPMAlerts();
+            initCharts(); fetchData(); fetchComments(); loadNotes();
+            setMode('daily', document.querySelector('.tab-btn')); 
         }
 
-        function resetIdleTimer() { clearTimeout(idleTimer); if(isEngineer) idleTimer = setTimeout(lockdownSystem, 30 * 60 * 1000); }
-        ['mousemove', 'keydown', 'click', 'scroll'].forEach(evt => document.addEventListener(evt, resetIdleTimer));
+        async function recordAccess(msg) { await sb.from('access_logs').insert([{ user_name: msg }]); }
 
-        function lockdownSystem() {
-            isEngineer = false; currentUser = "LOCKED";
-            document.getElementById('user-display').innerText = currentUser;
-            document.getElementById('user-avatar').innerText = "?";
-            document.getElementById('user-avatar').style.background = "var(--danger)";
-            
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-            const overlay = document.getElementById('portal-overlay'); overlay.style.visibility = 'visible'; overlay.style.opacity = '1';
-            document.getElementById('access-code').value = ''; document.getElementById('access-code').focus();
-        }
-
-        // --- 3. DATA ARCHITECTURE ---
         function setupRealtime() {
             sb.channel('chiller-sync')
               .on('postgres_changes', { event: '*', schema: 'public', table: 'chiller_logs' }, () => fetchData())
@@ -360,15 +358,122 @@
         }
 
         async function fetchData() {
-            const { data, error } = await sb.from('chiller_logs').select('*').order('created_at', {ascending:false}).limit(1000);
-            if(data) { rawCloudData = data; } else { rawCloudData = []; }
-            processAndRender(); checkAlerts(rawCloudData);
+            const { data } = await sb.from('chiller_logs').select('*').order('date', {ascending:false});
+            if(data) { rawData = data; processData(); }
+        }
+
+        // --- SMART TABS LOGIC ---
+        function setMode(mode, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            currentMode = mode;
+            
+            if(mode === 'custom') {
+                document.getElementById('custom-time-matrix').style.display = 'flex';
+                toggleCustomInputs(); 
+            } else {
+                document.getElementById('custom-time-matrix').style.display = 'none';
+                calculateDatesAndProcess();
+            }
+        }
+
+        function toggleCustomInputs() {
+            const subMode = document.getElementById('custom-mode').value;
+            ['range', 'week', 'month'].forEach(m => {
+                document.getElementById(`input-${m}`).style.display = (m === subMode) ? 'flex' : 'none';
+            });
+            processData(); 
+        }
+
+        // --- EXACT CALENDAR BOUNDARIES ---
+        function calculateDatesAndProcess() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            let start, end, prevStart, prevEnd;
+
+            if(currentMode === 'daily') {
+                start = end = todayStr;
+                let yest = new Date(today); yest.setDate(yest.getDate() - 1);
+                prevStart = prevEnd = yest.toISOString().split('T')[0];
+            } 
+            else if(currentMode === 'weekly') {
+                let day = today.getDay();
+                let diff = today.getDate() - day + (day === 0 ? -6 : 1); 
+                let mon = new Date(today.setDate(diff));
+                let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                
+                start = mon.toISOString().split('T')[0];
+                end = sun.toISOString().split('T')[0];
+                
+                let pMon = new Date(mon); pMon.setDate(pMon.getDate() - 7);
+                let pSun = new Date(sun); pSun.setDate(pSun.getDate() - 7);
+                prevStart = pMon.toISOString().split('T')[0];
+                prevEnd = pSun.toISOString().split('T')[0];
+            }
+            else if(currentMode === 'monthly') {
+                start = `${yyyy}-${mm}-01`;
+                let lastDay = new Date(yyyy, today.getMonth() + 1, 0);
+                end = `${yyyy}-${mm}-${lastDay.getDate()}`;
+                
+                let prevMonth = today.getMonth() === 0 ? 12 : today.getMonth();
+                let prevYear = today.getMonth() === 0 ? yyyy - 1 : yyyy;
+                let pmm = String(prevMonth).padStart(2, '0');
+                prevStart = `${prevYear}-${pmm}-01`;
+                let prevLastDay = new Date(prevYear, prevMonth, 0);
+                prevEnd = `${prevYear}-${pmm}-${prevLastDay.getDate()}`;
+            }
+            else if(currentMode === 'yearly') {
+                start = `${yyyy}-01-01`;
+                end = `${yyyy}-12-31`;
+                prevStart = `${yyyy-1}-01-01`;
+                prevEnd = `${yyyy-1}-12-31`;
+            }
+            
+            filterAndRender(start, end, prevStart, prevEnd);
+        }
+
+        function processData() {
+            if(currentMode !== 'custom') return; 
+            
+            const subMode = document.getElementById('custom-mode').value;
+            let start, end;
+
+            if (subMode === 'range') {
+                start = document.getElementById('date-start').value;
+                end = document.getElementById('date-end').value;
+            } else if (subMode === 'week') {
+                const weekVal = document.getElementById('date-week').value; 
+                if(!weekVal) return;
+                let [y, w] = weekVal.split('-W');
+                let simple = new Date(y, 0, 1 + (w - 1) * 7);
+                let day = simple.getDay();
+                let diff = simple.getDate() - day + (day === 0 ? -6 : 1); 
+                let mon = new Date(simple.setDate(diff));
+                let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                start = mon.toISOString().split('T')[0]; end = sun.toISOString().split('T')[0];
+            } else if (subMode === 'month') {
+                const monVal = document.getElementById('date-month').value;
+                if(!monVal) return;
+                start = monVal + "-01";
+                let d = new Date(monVal.split('-')[0], monVal.split('-')[1], 0);
+                end = monVal + "-" + d.getDate();
+            }
+            
+            filterAndRender(start, end, start, end); 
+        }
+
+        function filterAndRender(start, end, pStart, pEnd) {
+            filteredData = rawData.filter(r => r.date >= start && r.date <= end);
+            previousData = pStart ? rawData.filter(r => r.date >= pStart && r.date <= pEnd) : [];
+            updateKPIs(); renderTable(); updateCharts(); checkAlerts(filteredData);
         }
 
         function checkAlerts(data) {
-            if(data.length === 0) return;
-            const today = new Date().toISOString().split('T')[0];
-            const criticals = data.filter(r => r.date === today && (r.status === 'Critical' || r.amps > 21));
+            const criticals = data.filter(r => r.status === 'Critical' || r.amps > 21);
             const banner = document.getElementById('andon-banner');
             if(criticals.length > 0) {
                 banner.innerText = `🚨 CRITICAL ALERT: ${criticals[0].chiller} IS DRAWING ${criticals[0].amps}A.`;
@@ -376,147 +481,155 @@
             } else { banner.style.display = 'none'; }
         }
 
-        function processAndRender() {
-            const now = new Date();
-            const filtered = rawCloudData.filter(r => {
-                const d = new Date(r.date);
-                if(period === 'daily') return d.toDateString() === now.toDateString();
-                if(period === 'weekly') return (now - d) / 86400000 <= 7;
-                if(period === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                if(period === 'yearly') return d.getFullYear() === now.getFullYear();
-                return true;
-            });
-            renderTable(filtered); updateKPIs(filtered); updateCharts(filtered);
+        function updateKPIs() {
+            const calc = (data) => {
+                if(data.length === 0) return { online: 0, amps: 0, delta: 0, warn: 0 };
+                const uniqueOnline = new Set(data.filter(r => r.status === 'Operational').map(r => r.chiller)).size;
+                const avgAmps = data.reduce((s, r) => s + r.amps, 0) / data.length;
+                let peakDelta = 0;
+                data.forEach(r => { let d = Math.abs(r.ewt - r.lwt); if(d > peakDelta) peakDelta = d; });
+                const warn = data.filter(r => r.status === 'Warning' || r.status === 'Critical').length;
+                return { online: uniqueOnline, amps: avgAmps, delta: peakDelta, warn: warn };
+            };
+
+            const curr = calc(filteredData);
+            const prev = calc(previousData);
+
+            document.getElementById('kpi-online').innerText = `${curr.online}/7`;
+            document.getElementById('kpi-amps').innerText = curr.amps.toFixed(1) + " A";
+            document.getElementById('kpi-delta').innerText = curr.delta.toFixed(1) + " °C";
+            document.getElementById('kpi-warn').innerText = curr.warn;
+
+            // Reverse Variance Logic (Up is Bad for Amps & Warnings)
+            const setVar = (id, c, p, reverseLogic = false) => {
+                const el = document.getElementById(id);
+                if (currentMode === 'custom' || !p || p === 0) { el.innerText = "--"; el.className = "variance"; return; }
+                const diff = c - p; 
+                const sym = diff >= 0 ? "↑" : "↓";
+                el.innerText = `${sym} ${Math.abs(diff).toFixed(1)}`;
+                
+                if(diff === 0) { el.className = "variance"; }
+                else if(reverseLogic) { el.className = `variance ${diff > 0 ? 'bad-up' : 'good-down'}`; }
+                else { el.className = `variance ${diff > 0 ? 'up' : 'down'}`; }
+            };
+
+            setVar('var-amps', curr.amps, prev.amps, true); 
+            setVar('var-delta', curr.delta, prev.delta, true); 
+            setVar('var-warn', curr.warn, prev.warn, true);
+
+            const ampCard = document.getElementById('card-amps');
+            if(curr.amps > 21) ampCard.classList.add('pulse-red'); else ampCard.classList.remove('pulse-red');
         }
 
-        // --- 4. SAVING ---
+        function renderTable() {
+            document.getElementById('log-body').innerHTML = filteredData.map(r => {
+                const deltaT = Math.abs(r.ewt - r.lwt).toFixed(1);
+                let statClass = r.status === 'Operational' ? 'status-ok' : (r.status === 'Offline' ? 'status-crit' : 'status-warn');
+                return `<tr>
+                    <td>${r.date}</td><td><b>${r.chiller.replace(' Chiller','')}</b></td>
+                    <td><span class="status-pill ${statClass}">${r.status}</span></td>
+                    <td><b>${r.amps}A</b></td><td>${r.ewt}°</td><td>${r.lwt}°</td><td><b>${deltaT}°</b></td>
+                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}"><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></td>
+                </tr>`;
+            }).join('');
+        }
+
         async function saveData() {
             const btn = document.getElementById('transmit-btn'); 
             const entry = {
                 date: document.getElementById('f-date').value || new Date().toISOString().split('T')[0],
-                shift: document.getElementById('f-shift').value, 
-                chiller: document.getElementById('f-chiller').value,
-                status: document.getElementById('f-status').value, 
-                amps: parseFloat(document.getElementById('f-amps').value) || 0, 
-                ewt: parseFloat(document.getElementById('f-ewt').value) || 0, 
-                lwt: parseFloat(document.getElementById('f-lwt').value) || 0,
-                psi: parseInt(document.getElementById('f-psi').value) || 0,
-                comment: document.getElementById('f-comment').value,
+                shift: document.getElementById('f-shift').value, chiller: document.getElementById('f-chiller').value,
+                status: document.getElementById('f-status').value, amps: parseFloat(document.getElementById('f-amps').value) || 0, 
+                ewt: parseFloat(document.getElementById('f-ewt').value) || 0, lwt: parseFloat(document.getElementById('f-lwt').value) || 0,
+                psi: parseInt(document.getElementById('f-psi').value) || 0, comment: document.getElementById('f-comment').value,
                 created_at: new Date().toISOString()
             };
-            if (entry.amps === 0) { alert("ALERT: Current Draw (Amps) must be recorded."); return; }
+            if (entry.amps === 0) { alert("Amperage required."); return; }
             btn.innerText = "UPLOADING...";
             const { error } = await sb.from('chiller_logs').insert([entry]);
             if(!error) { 
-                await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ LOG INSPECTION DATA"; }, 2000);
+                await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ LOG INSPECTION"; }, 2000);
                 document.getElementById('f-amps').value = ''; document.getElementById('f-ewt').value = ''; document.getElementById('f-lwt').value = ''; document.getElementById('f-comment').value = '';
-            } else {
-                alert("Database Error."); btn.innerText = "☁️ LOG INSPECTION DATA";
             }
-        }
-
-        // --- 5. HVAC CHARTS & KPIS ---
-        function animateCounter(id, endVal, suffix = "") {
-            const el = document.getElementById(id); const startVal = parseFloat(el.getAttribute('data-current')) || 0;
-            if(startVal === endVal) return;
-            const duration = 1000; let startTS = null;
-            const step = (ts) => {
-                if(!startTS) startTS = ts; const progress = Math.min((ts - startTS) / duration, 1);
-                const current = startVal + (endVal - startVal) * (1 - Math.pow(1 - progress, 4));
-                el.innerText = current.toFixed(1) + suffix; 
-                if(progress < 1) window.requestAnimationFrame(step);
-                else { el.setAttribute('data-current', endVal); el.innerText = endVal.toFixed(1) + suffix; }
-            };
-            window.requestAnimationFrame(step);
-        }
-
-        function updateKPIs(data) {
-            if(data.length === 0) return;
-            const uniqueChillers = new Set(data.filter(r => r.status === 'Operational').map(r => r.chiller));
-            document.getElementById('kpi-online').innerText = `${uniqueChillers.size}/7`;
-
-            const avgAmps = data.reduce((s,r)=>s+r.amps,0) / data.length;
-            animateCounter('kpi-amps', avgAmps, " A");
-
-            let maxDelta = 0;
-            data.forEach(r => { let dt = Math.abs(r.ewt - r.lwt); if(dt > maxDelta) maxDelta = dt; });
-            animateCounter('kpi-delta', maxDelta, " °C");
-
-            const warnings = data.filter(r => r.status === 'Warning' || r.status === 'Critical').length;
-            document.getElementById('kpi-warn').innerText = warnings;
-
-            const ampColor = avgAmps > 21 ? 'var(--danger)' : (avgAmps > 18 ? 'var(--warning)' : 'var(--success)');
-            document.getElementById('line-amps').style.background = ampColor;
-            const ampCard = document.getElementById('card-amps');
-            if(avgAmps > 21) ampCard.classList.add('pulse-red'); else ampCard.classList.remove('pulse-red');
-        }
-
-        function renderTable(data) {
-            document.getElementById('log-body').innerHTML = data.slice(0, 30).map(r => {
-                const deltaT = Math.abs(r.ewt - r.lwt).toFixed(1);
-                let statClass = r.status === 'Operational' ? 'status-ok' : (r.status === 'Offline' ? 'status-crit' : 'status-warn');
-                let actionBtns = isEngineer ? `<div class="action-cell"><button class="icon-btn" onclick="deleteLog(${r.id})" style="color:var(--danger)">🗑</button></div>` : "";
-                return `<tr>
-                    <td>${r.date.slice(5)}</td><td>${r.shift[0]}</td><td><b>${r.chiller.replace(' Chiller','')}</b></td>
-                    <td><span class="status-pill ${statClass}">${r.status}</span></td>
-                    <td><b>${r.amps}A</b></td><td>${r.ewt}°</td><td>${r.lwt}°</td><td><b>${deltaT}°</b></td>
-                    <td style="font-size:10px; text-align:left; color:var(--text-dim);">${r.comment || ''}</td>
-                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}">${actionBtns}</td>
-                </tr>`;
-            }).join('');
         }
 
         async function deleteLog(id) { if(confirm("PERMANENT ACTION: Delete this log?")) { await sb.from('chiller_logs').delete().eq('id', id); fetchData(); } }
 
         function initCharts() {
-            const cleanScales = { x: { ticks: { color: '#64748b', font:{size: 10} }, grid: { display: false }, border: { display: false } }, y: { beginAtZero: true, ticks: { color: '#64748b', font:{size: 10} }, grid: { color: 'rgba(100,116,139,0.1)' }, border: { display: false } } };
-            const animCfg = { duration: 600, easing: 'easeOutQuart' };
-
-            charts.amp = new Chart(document.getElementById('ampChart'), { type: 'bar', data: { labels: ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Support'], datasets: [{ label: 'Current Draw (Amps)', backgroundColor: '#0ea5e9', borderRadius: 4, data: [0,0,0,0,0,0,0] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { display: false } }, scales: cleanScales } });
-            charts.temp = new Chart(document.getElementById('tempChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Avg Delta T (°C)', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 3, data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { display: false } }, scales: cleanScales } });
-            charts.status = new Chart(document.getElementById('statusChart'), { type: 'doughnut', data: { labels: ['Operational', 'Warning', 'Maintenance', 'Offline'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#0ea5e9', '#ef4444'], borderWidth: 0, cutout:'75%' }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } } } } });
+            const cfg = { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(100,116,139,0.1)' } } } };
+            charts.amp = new Chart(document.getElementById('ampChart'), { type: 'bar', data: { labels: ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Support'], datasets: [{ label: 'Avg Amps', backgroundColor: '#0ea5e9', borderRadius: 4, data: [] }]}, options: { ...cfg, plugins: { legend: { display: false } } } });
+            charts.temp = new Chart(document.getElementById('tempChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Avg Delta T (°C)', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.3, data: [] }]}, options: { ...cfg, plugins: { legend: { display: false } } } });
+            charts.status = new Chart(document.getElementById('statusChart'), { type: 'doughnut', data: { labels: ['Operational', 'Warning', 'Maintenance', 'Offline'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#0ea5e9', '#ef4444'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } } });
         }
 
-        function updateCharts(data) {
-            if(!charts.amp || data.length === 0) return;
-            const chillerNames = ['Line 1 Chiller', 'Line 2 Chiller', 'Line 3 Chiller', 'Line 4 Chiller', 'Line 5 Chiller', 'Line 6 Chiller', 'Support Chiller'];
-            const ampData = chillerNames.map(name => { const logs = data.filter(r => r.chiller === name); return logs.length > 0 ? logs[0].amps : 0; });
+        function updateCharts() {
+            if(!charts.amp || filteredData.length === 0) return;
+            
+            const ampData = CHILLER_LIST.map(name => {
+                const logs = filteredData.filter(r => r.chiller === name);
+                return logs.length > 0 ? (logs.reduce((s,r)=>s+r.amps,0)/logs.length) : 0;
+            });
             charts.amp.data.datasets[0].data = ampData;
             charts.amp.data.datasets[0].backgroundColor = ampData.map(a => a > 21 ? '#ef4444' : (a > 18 ? '#f59e0b' : '#0ea5e9'));
             charts.amp.update();
 
-            const recentDays = [...new Set(data.map(r => r.date))].slice(0, 7).reverse();
-            charts.temp.data.labels = recentDays.map(d => d.slice(5));
-            charts.temp.data.datasets[0].data = recentDays.map(d => {
-                const dayLogs = data.filter(r => r.date === d);
-                const avgDelta = dayLogs.reduce((s,r) => s + Math.abs(r.ewt - r.lwt), 0) / dayLogs.length;
-                return avgDelta.toFixed(1);
+            const labels = [...new Set(filteredData.map(r => r.date))].sort();
+            charts.temp.data.labels = labels;
+            charts.temp.data.datasets[0].data = labels.map(d => {
+                const dayLogs = filteredData.filter(r => r.date === d);
+                return (dayLogs.reduce((s,r) => s + Math.abs(r.ewt - r.lwt), 0) / dayLogs.length).toFixed(1);
             });
             charts.temp.update();
 
             const statuses = { 'Operational':0, 'Warning':0, 'Maintenance':0, 'Offline':0 };
-            data.forEach(r => { if(statuses[r.status] !== undefined) statuses[r.status]++; });
+            filteredData.forEach(r => { if(statuses[r.status] !== undefined) statuses[r.status]++; });
             charts.status.data.datasets[0].data = Object.values(statuses);
             charts.status.update();
         }
 
-        // --- 6. v16.2 TPM SCHEDULER ENGINE ---
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
-
-        function checkPMAlerts() {
-            if(Notification.permission !== "granted") return;
-            let needsPM = false;
-            const now = new Date();
+        function generateSmartReport() {
+            if(filteredData.length === 0) { alert("No data found for this timeframe."); return; }
+            let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
+            
+            let highestAmp = { name: "N/A", amps: 0 };
+            let worstDelta = { name: "N/A", delta: 99 }; 
+            
             CHILLER_LIST.forEach(chiller => {
-                let lastDate = pmData[chiller] ? new Date(pmData[chiller]) : null;
-                if(!lastDate) return; 
-                let diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-                if(diffDays >= 30) needsPM = true;
+                const logs = filteredData.filter(r => r.chiller === chiller);
+                if(logs.length > 0) {
+                    let avgA = logs.reduce((s,r)=>s+r.amps,0)/logs.length;
+                    let avgD = logs.reduce((s,r)=>s+Math.abs(r.ewt-r.lwt),0)/logs.length;
+                    if(avgA > highestAmp.amps) highestAmp = { name: chiller, amps: avgA };
+                    if(avgD < worstDelta.delta && avgD > 0) worstDelta = { name: chiller, delta: avgD };
+                }
             });
 
-            if(needsPM) {
-                new Notification("🔧 RCC Maintenance Alert", { body: "One or more chillers are due for scheduled Preventive Maintenance. Check the PM Scheduler." });
-            }
+            const fleetAmps = (filteredData.reduce((s,r)=>s+r.amps,0) / filteredData.length).toFixed(1);
+
+            let text = `========================================\nRCC HVAC EXECUTIVE ${modeText} SUMMARY\n========================================\n\n`;
+            text += `[ OVERALL FLEET DIAGNOSTICS ]\n> Average Electrical Load: ${fleetAmps}A per unit.\n`;
+            
+            if(highestAmp.amps > 21) text += `> ⚠️ CRITICAL LOAD: ${highestAmp.name} averaged ${highestAmp.amps.toFixed(1)}A over this period. Compressor stress detected.\n`;
+            else text += `> Peak Draw: ${highestAmp.name} averaged a safe ${highestAmp.amps.toFixed(1)}A.\n`;
+
+            if(worstDelta.delta < 3 && worstDelta.name !== "N/A") text += `> ⚠️ THERMAL WARNING: ${worstDelta.name} had a poor average Delta-T of ${worstDelta.delta.toFixed(1)}°C.\n`;
+
+            text += `\n[ MAINTENANCE DIRECTIVES ]\n`;
+            if (highestAmp.amps > 21) text += `> Immediate operational review required on ${highestAmp.name} to identify source of historical overload.\n`;
+            if (worstDelta.delta < 3 && worstDelta.name !== "N/A") text += `> Inspect condenser tubes on ${worstDelta.name} for scaling or fouling.\n`;
+            if (highestAmp.amps <= 21 && worstDelta.delta >= 3) text += `> Fleet operated within normal thermodynamic limits. Continue PM schedule.\n`;
+
+            document.getElementById('report-content').innerText = text;
+            document.getElementById('system-menu').classList.remove('active');
+            document.getElementById('main-overlay').style.display = 'block';
+            document.getElementById('report-modal').style.display = 'block';
+        }
+
+        function exportExcel() {
+            if(filteredData.length === 0) return alert("No data to export.");
+            const wsData = filteredData.map(r => ({ "Date": r.date, "Shift": r.shift, "Unit": r.chiller, "Status": r.status, "Amps": r.amps, "EWT": r.ewt, "LWT": r.lwt, "Delta T": Math.abs(r.ewt - r.lwt).toFixed(1), "Notes": r.comment }));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Filtered Logs");
+            XLSX.writeFile(wb, `RCC_Chiller_Filtered.xlsx`);
         }
 
         function openPMModal() {
@@ -525,104 +638,49 @@
             document.getElementById('pm-modal').style.display = 'block';
             
             const contentBox = document.getElementById('pm-content');
-            let html = "";
-            const now = new Date();
+            let html = ""; const now = new Date();
 
             CHILLER_LIST.forEach(chiller => {
                 if(!pmData[chiller]) { pmData[chiller] = now.toISOString(); localStorage.setItem('rcc_chiller_pm_dates', JSON.stringify(pmData)); }
+                let diffDays = Math.floor((now - new Date(pmData[chiller])) / (1000 * 60 * 60 * 24));
                 
-                let lastDate = new Date(pmData[chiller]);
-                let diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-                
-                let actionReq = "No Action Required";
-                let actionClass = "pm-ok-text";
-                let btnColor = "var(--border)";
-                let btnTextCol = "var(--text)";
+                let req = "No Action Required"; let col = "var(--border)"; let tcol = "var(--text)"; let aClass = "pm-ok-text";
+                if(diffDays >= 365) { req = "ANNUAL PM DUE"; col = "var(--danger)"; tcol = "white"; aClass = "pm-action-text"; }
+                else if(diffDays >= 90) { req = "QUARTERLY PM DUE"; col = "var(--warning)"; tcol = "white"; aClass = "pm-action-text"; }
+                else if(diffDays >= 30) { req = "MONTHLY PM DUE"; col = "var(--accent)"; tcol = "white"; aClass = "pm-action-text"; }
 
-                if(diffDays >= 365) { actionReq = "ANNUAL PM DUE: Full oil change, replace filter driers, vibration analysis."; actionClass = "pm-action-text"; btnColor = "var(--danger)"; btnTextCol = "white";}
-                else if(diffDays >= 180) { actionReq = "SEMI-ANNUAL PM DUE: Megger test motors, test crankcase heaters."; actionClass = "pm-action-text"; btnColor = "var(--warning)"; btnTextCol = "white";}
-                else if(diffDays >= 90) { actionReq = "QUARTERLY PM DUE: Wash condenser coils, check compressor oil levels, tighten electrical."; actionClass = "pm-action-text"; btnColor = "var(--warning)"; btnTextCol = "white";}
-                else if(diffDays >= 30) { actionReq = "MONTHLY PM DUE: Clean air filters, inspect belts, check sight glass."; actionClass = "pm-action-text"; btnColor = "var(--accent)"; btnTextCol = "white";}
-
-                html += `
-                <div class="pm-card">
-                    <div class="pm-header">
-                        <b style="font-size:14px; color:var(--text);">${chiller}</b>
-                        <span style="font-size:11px; color:var(--text-dim);">Last PM: <b>${diffDays} days ago</b> (${lastDate.toLocaleDateString()})</span>
-                    </div>
-                    <div class="${actionClass}">${actionReq}</div>
-                    <button class="btn" style="background:${btnColor}; color:${btnTextCol}; padding: 8px; margin-top:5px; font-size:10px;" onclick="resetPMClock('${chiller}')">MARK COMPLETED & RESET CLOCK</button>
-                </div>`;
+                html += `<div class="pm-card"><div class="pm-header"><b style="color:var(--text);">${chiller}</b> <span style="font-size:10px; color:var(--text-dim);">Last PM: ${diffDays} days ago</span></div>
+                <div class="${aClass}">${req}</div>
+                <button class="btn" style="background:${col}; color:${tcol}; font-size:10px; padding:8px;" onclick="resetPMClock('${chiller}')">MARK COMPLETED</button></div>`;
             });
             contentBox.innerHTML = html;
         }
 
         function resetPMClock(chiller) {
-            if(confirm(`Confirm you have completed the required Preventive Maintenance for ${chiller}? This will reset its clock to 0 days.`)) {
-                pmData[chiller] = new Date().toISOString();
-                localStorage.setItem('rcc_chiller_pm_dates', JSON.stringify(pmData));
-                openPMModal(); 
-            }
-        }
-
-        function generateShiftReport() {
-            const today = new Date().toISOString().split('T')[0];
-            const todayData = rawCloudData.filter(r => r.date === today);
-            if(todayData.length === 0) { alert("No HVAC data recorded for today."); return; }
-
-            let highestAmpChiller = { name: "N/A", amps: 0 }; let worstDeltaChiller = { name: "N/A", delta: 99 }; 
-            todayData.forEach(r => {
-                let dt = Math.abs(r.ewt - r.lwt);
-                if(r.amps > highestAmpChiller.amps) highestAmpChiller = { name: r.chiller, amps: r.amps, psi: r.psi };
-                if(dt < worstDeltaChiller.delta && dt > 0) worstDeltaChiller = { name: r.chiller, delta: dt };
-            });
-
-            const avgAmps = (todayData.reduce((s,r)=>s+r.amps,0) / todayData.length).toFixed(1);
-
-            let narrative = `[ DIAGNOSTIC FINDINGS ]\n`;
-            narrative += `> The fleet is operating at an average electrical load of ${avgAmps}A per unit.\n`;
-            if(highestAmpChiller.amps > 21) narrative += `> ⚠️ CRITICAL LOAD: ${highestAmpChiller.name} is drawing ${highestAmpChiller.amps}A. Compressor stress detected.\n`;
-            else narrative += `> Highest Load: ${highestAmpChiller.name} drawing a safe ${highestAmpChiller.amps}A.\n`;
-            if(worstDeltaChiller.delta < 3) narrative += `> ⚠️ THERMAL WARNING: ${worstDeltaChiller.name} has a dangerously low Delta-T of ${worstDeltaChiller.delta.toFixed(1)}°C, indicating poor heat exchange.\n`;
-
-            let recommendation = `\n[ MAINTENANCE DIRECTIVES ]\n`;
-            if (highestAmpChiller.amps > 21) recommendation += `> Immediate operational review required on ${highestAmpChiller.name} to identify source of overload.\n`;
-            if (worstDeltaChiller.delta < 3) recommendation += `> Inspect condenser tubes on ${worstDeltaChiller.name} for scaling or fouling.\n`;
-            if (highestAmpChiller.amps <= 21 && worstDeltaChiller.delta >= 3) recommendation += `> Fleet is operating within normal thermodynamic and electrical limits. Continue standard PM schedule.\n`;
-
-            let reportText = `========================================\nRCC HVAC SMART DIAGNOSTICS\nDATE: ${today}\n========================================\n\n${narrative}${recommendation}\n`;
-            document.getElementById('report-content').innerText = reportText;
-            document.getElementById('system-menu').classList.remove('active');
-            document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
-        }
-
-        function downloadReport() {
-            const text = document.getElementById('report-content').innerText;
-            const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = `RCC_Chiller_Report.txt`; a.click();
-        }
-
-        function exportExcel() {
-            if(rawCloudData.length === 0) { alert("No data to export."); return; }
-            const wsData = rawCloudData.map(r => ({
-                "Date": r.date, "Shift": r.shift, "Chiller Unit": r.chiller, "Status": r.status,
-                "Amperage Draw (A)": r.amps, "Entering Water Temp (C)": r.ewt, "Leaving Water Temp (C)": r.lwt,
-                "Delta T (C)": Math.abs(r.ewt - r.lwt).toFixed(1), "Pressure (PSI)": r.psi, "Notes": r.comment
-            }));
-            const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, "Chiller Logs");
-            XLSX.writeFile(wb, `RCC_Chiller_Diagnostics_${new Date().toISOString().split('T')[0]}.xlsx`);
+            if(confirm(`Reset PM clock for ${chiller}?`)) { pmData[chiller] = new Date().toISOString(); localStorage.setItem('rcc_chiller_pm_dates', JSON.stringify(pmData)); openPMModal(); }
         }
 
         async function fetchComments() {
             const { data } = await sb.from('live_comments').select('*').order('created_at', {ascending: true}).limit(50);
-            if (data) document.getElementById('chat-box').innerHTML = data.map(c => `<div class="chat-msg" style="${c.user_name.includes("Engr.") || c.user_name.includes("Admin") ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> <b>${c.user_name}</b> <span>${c.message}</span></div>`).join('');
+            if(data) document.getElementById('chat-box').innerHTML = data.map(c => `<div class="chat-msg" style="${c.user_name.includes("Admin") ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> <b>${c.user_name}</b> <span>${c.message}</span></div>`).join('');
         }
-        async function sendComment() { const input = document.getElementById('chat-input'); if(input.value.trim()) { await sb.from('live_comments').insert([{ user_name: currentUser, message: input.value.trim() }]); input.value = ''; } }
-        
-        function setPeriod(p, btn) { period = p; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); processAndRender(); }
+        async function sendComment() { const i = document.getElementById('chat-input'); if(i.value) { await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value }]); i.value = ''; fetchData(); } }
+
         function saveNotes() { localStorage.setItem('hvac_notes', document.getElementById('prod-notepad').value); }
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('hvac_notes') || ""; }
-        function toggleMenu() { document.getElementById('system-menu').classList.toggle('active'); document.querySelector('.menu-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; }
+
+        async function fetchAccessLogs() {
+            const { data } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(30);
+            if(data) document.getElementById('access-log-display').innerHTML = data.map(l => `<div style="padding:4px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim)">[${new Date(l.created_at).toLocaleTimeString()}]</span> ${l.user_name}</div>`).join('');
+        }
+
+        function toggleMenu() { 
+            document.getElementById('system-menu').classList.toggle('active'); 
+            document.getElementById('main-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; 
+            if(isEngineer && document.getElementById('system-menu').classList.contains('active')) fetchAccessLogs();
+        }
+        
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         
         function toggleTheme() { 
             document.body.classList.toggle('dark-mode'); 
@@ -630,19 +688,14 @@
             if(charts.amp){ Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'; Object.values(charts).forEach(c => c.update()); }
         }
         
-        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+        function downloadReport() { const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([document.getElementById('report-content').innerText], { type: 'text/plain' })); a.download = `RCC_Chiller_Summary.txt`; a.click(); }
         
+        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
         window.onload = () => { 
+            setupRealtime();
             const savedUser = localStorage.getItem('rcc_user');
-            const savedRole = localStorage.getItem('rcc_role');
-            if(savedUser && savedUser !== "GUEST VIEWER") {
-                currentUser = savedUser;
-                isEngineer = (savedRole === 'admin');
-                document.getElementById('portal-overlay').style.display = 'none';
-                unlockSystem();
-            } else {
-                document.getElementById('access-code').focus(); 
-            }
+            if(savedUser && savedUser !== "GUEST VIEWER") { currentUser = savedUser; isEngineer = (localStorage.getItem('rcc_role') === 'admin'); document.getElementById('portal-overlay').style.display = 'none'; unlockSystem(); } 
+            else { document.getElementById('access-code').focus(); }
             if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark-mode'); 
         };
     </script>
