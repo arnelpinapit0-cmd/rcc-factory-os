@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v17.1 Smart Timeline</title>
+    <title>RCC Bodyline OS | v17.2 Advanced MES</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -47,12 +47,11 @@
         .user-profile-container { grid-column: 3; display: flex; justify-content: flex-end; }
         .user-profile { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 6px 15px 6px 15px; border-radius: 30px; border: 1px solid var(--border); }
         .avatar { width: 32px; height: 32px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
-        .user-info { display: flex; flex-direction: column; text-align: right;}
-        .user-name { font-size: 13px; font-weight: 800; color: var(--text); text-transform: uppercase; }
+        .user-name { font-size: 13px; font-weight: 800; text-transform: uppercase; color: var(--text); }
 
         .main-content { padding: 20px; max-width: 1600px; margin: auto; }
         
-        /* THE TABS ARE BACK */
+        /* THE TABS */
         .tabs { display: flex; gap: 10px; justify-content: center; margin: 10px 0 15px 0; flex-wrap: wrap;}
         .tab-btn { display: flex; align-items: center; gap: 8px; padding: 10px 25px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s;}
         .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -63,7 +62,7 @@
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .matrix-group { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 8px 15px; border-radius: 6px; border: 1px solid var(--border); }
         .matrix-group label { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; }
-        .matrix-group input { width: auto; background: transparent; border: none; color: var(--text); font-weight: 700; font-size: 13px; outline: none; padding: 0; margin: 0; cursor: pointer; }
+        .matrix-group input, .matrix-group select { width: auto; background: transparent; border: none; color: var(--text); font-weight: 700; font-size: 13px; outline: none; padding: 0; margin: 0; cursor: pointer; }
 
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .kpi-card { background: var(--surface); border: 1px solid var(--border); padding: 20px 15px; border-radius: 12px; text-align: center; position: relative;}
@@ -77,9 +76,12 @@
         @media (max-width: 1100px) { .chart-row { grid-template-columns: 1fr; } }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
-        .admin-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        @media (max-width: 900px) { .admin-form-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 500px) { .admin-form-grid { grid-template-columns: 1fr; } }
+        /* MULTI-MINUTE GRID STYLES */
+        .admin-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+        .downtime-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; background: rgba(37, 99, 235, 0.05); border: 1px dashed var(--accent); border-radius: 8px; margin-bottom: 10px;}
+        .downtime-grid div { display: flex; flex-direction: column; }
+        @media (max-width: 900px) { .admin-form-grid { grid-template-columns: repeat(2, 1fr); } .downtime-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 500px) { .admin-form-grid, .downtime-grid { grid-template-columns: 1fr; } }
 
         input, select, textarea { width: 100%; padding: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; box-sizing: border-box; margin-bottom: 5px; font-family: inherit; font-size: 13px;}
         input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
@@ -91,12 +93,15 @@
         th { text-align: left; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-dim); text-transform: uppercase; position: sticky; top: 0; background: var(--surface); z-index: 10;}
         td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
         .admin-only { display: none; }
+        .action-cell { display: flex; gap: 10px; }
         .icon-btn { background: none; border: none; font-size: 14px; cursor: pointer; opacity: 0.6; transition: 0.2s; color: var(--text);}
-        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        .icon-btn:hover { opacity: 1; transform: scale(1.2); }
 
         .chat-container { height: 250px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
         .chat-msg { padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); position: relative; }
         .chat-msg b { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; }
+        .del-msg-btn { position: absolute; right: 5px; top: 5px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; }
+        .del-msg-btn:hover { color: var(--danger); }
 
         .fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: 0.3s; }
         .fab:hover { transform: rotate(90deg); }
@@ -104,7 +109,7 @@
         #system-menu.active { right: 0; visibility: visible; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; }
 
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 600px; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto;}
         .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
         
         .pm-card { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;}
@@ -139,7 +144,7 @@
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
             <h2 style="margin:0 0 5px 0; font-weight: 800; font-size: 28px;">RCC BODYLINE OS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">TIME-MATRIX v17.1</p>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">ADVANCED MES v17.2</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
             <button class="btn-guest" onclick="guestLogin()" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:10px; width:100%; border-radius:8px; cursor:pointer;">👀 VIEW AS GUEST</button>
@@ -201,12 +206,12 @@
 
         <div class="chart-row">
             <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Historical Performance Trend</h3><div style="height: 220px;"><canvas id="prodChart"></canvas></div></div>
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Downtime Root Cause Analysis</h3><div style="height: 220px;"><canvas id="utilChart"></canvas></div></div>
+            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Downtime Root Cause (Minutes Lost)</h3><div style="height: 220px;"><canvas id="utilChart"></canvas></div></div>
         </div>
 
         <div class="chart-row">
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Day Shift Efficiency (Selected Period)</h3><div style="height: 180px;"><canvas id="effChartDay"></canvas></div></div>
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Night Shift Efficiency (Selected Period)</h3><div style="height: 180px;"><canvas id="effChartNight"></canvas></div></div>
+            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Day Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartDay"></canvas></div></div>
+            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Night Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartNight"></canvas></div></div>
         </div>
 
         <div class="chart-row">
@@ -215,19 +220,27 @@
 
         <div class="chart-row admin-only" id="admin-form-container">
             <div class="panel" id="admin-form" style="grid-column: span 2; border: 1px solid var(--accent); background: var(--bg);">
-                <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Data Acquisition Terminal</h3>
+                <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Advanced Data Acquisition Terminal</h3>
                 
                 <div class="admin-form-grid">
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">DATE</label><input type="date" id="f-date"></div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">SHIFT</label><select id="f-shift"><option>Day Shift</option><option>Night Shift</option></select></div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">LINE</label><select id="f-line"><option>Line 1</option><option>Line 2</option><option>Line 3</option><option>Line 4</option><option>Line 5</option><option>Line 6</option></select></div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">ROOT CAUSE</label><select id="f-reason"><option>Normal</option><option>Mechanical</option><option>Electrical</option><option>Material</option><option>QC</option></select></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">RUN TIME (MIN)</label><input type="number" id="f-run" value="480"></div>
                     
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TARGET OUTPUT</label><input type="number" id="f-target" placeholder="0"></div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">ACTUAL OUTPUT</label><input type="number" id="f-actual" placeholder="0"></div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">RUN TIME (MIN)</label><input type="number" id="f-run" value="480"></div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">DOWNTIME (MIN)</label><input type="number" id="f-down" placeholder="0"></div>
                 </div>
+
+                <label style="font-size:11px; font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">DOWNTIME ALLOCATION (MINUTES)</label>
+                <div class="downtime-grid">
+                    <div><label style="font-size:10px; color:var(--text-dim);">⚙️ MECHANICAL</label><input type="number" id="f-mech" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">⚡ ELECTRICAL</label><input type="number" id="f-elec" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">📦 MATERIAL</label><input type="number" id="f-mat" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">🔬 QC / QUALITY</label><input type="number" id="f-qc" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">🧍 PACKER / OPS</label><input type="number" id="f-pack" placeholder="0"></div>
+                </div>
+
                 <textarea id="f-comment" placeholder="Input specific trouble, jamming details, or actions taken..." rows="2" style="margin-top:10px;"></textarea>
                 <button class="btn btn-primary" id="transmit-btn" onclick="saveData()" style="margin-top:10px;">☁️ TRANSMIT RECORD</button>
             </div>
@@ -238,7 +251,7 @@
                 <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Filtered Production Log</h3>
                 <div style="overflow-y:auto; height: 400px;">
                     <table id="log-table">
-                        <thead><tr><th>Date</th><th>Shift</th><th>Line</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Down</th><th class="admin-only">Action</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Shift</th><th>Line</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Total Down</th><th class="admin-only">Action</th></tr></thead>
                         <tbody id="log-body"></tbody>
                     </table>
                 </div>
@@ -293,6 +306,32 @@
         <button class="btn" style="width:100%; margin-top: 10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE SCHEDULER</button>
     </div>
 
+    <div id="edit-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">✏️ EDIT PRODUCTION RECORD</h2>
+        <input type="hidden" id="edit-id">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div><label style="font-size:10px; color:var(--text-dim);">TARGET</label><input type="number" id="edit-target"></div>
+            <div><label style="font-size:10px; color:var(--text-dim);">ACTUAL</label><input type="number" id="edit-actual"></div>
+        </div>
+        
+        <label style="font-size:11px; font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">EDIT DOWNTIME (MINUTES)</label>
+        <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
+            <div><label style="font-size:9px;">MECH</label><input type="number" id="edit-mech"></div>
+            <div><label style="font-size:9px;">ELEC</label><input type="number" id="edit-elec"></div>
+            <div><label style="font-size:9px;">MATL</label><input type="number" id="edit-mat"></div>
+            <div><label style="font-size:9px;">QC</label><input type="number" id="edit-qc"></div>
+            <div><label style="font-size:9px;">PACK</label><input type="number" id="edit-pack"></div>
+        </div>
+        
+        <textarea id="edit-comment" rows="2" placeholder="Update comments..."></textarea>
+        
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn btn-primary" onclick="submitEdit()">💾 SAVE CHANGES</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); width:100%;" onclick="closeModals()">CANCEL</button>
+        </div>
+    </div>
+
     <script>
         const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3am5ic2x4ZHNzeXJpb2tjZHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDg1MDUsImV4cCI6MjA5MTIyNDUwNX0.sNFCBZoSwZS0b5eU6iBmLeTt5ru7dP8G2GYJ9hrxAFg";
@@ -331,7 +370,7 @@
             document.getElementById('portal-overlay').style.display = 'none';
             
             initCharts(); fetchData(); fetchComments(); loadNotes();
-            setMode('daily', document.querySelector('.tab-btn')); // Default to Today
+            setMode('daily', document.querySelector('.tab-btn')); 
         }
 
         async function recordAccess(msg) { await sb.from('access_logs').insert([{ user_name: msg }]); }
@@ -349,7 +388,6 @@
             if(data) { rawData = data; processData(); }
         }
 
-        // --- SMART TABS LOGIC ---
         function setMode(mode, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
@@ -357,7 +395,7 @@
             
             if(mode === 'custom') {
                 document.getElementById('custom-time-matrix').style.display = 'flex';
-                toggleCustomInputs(); // Show correct inputs based on select
+                toggleCustomInputs(); 
             } else {
                 document.getElementById('custom-time-matrix').style.display = 'none';
                 calculateDatesAndProcess();
@@ -369,10 +407,9 @@
             ['range', 'week', 'month'].forEach(m => {
                 document.getElementById(`input-${m}`).style.display = (m === subMode) ? 'flex' : 'none';
             });
-            processData(); // Process immediately on toggle
+            processData(); 
         }
 
-        // --- EXACT CALENDAR BOUNDARIES ---
         function calculateDatesAndProcess() {
             const today = new Date();
             const yyyy = today.getFullYear();
@@ -389,69 +426,55 @@
             } 
             else if(currentMode === 'weekly') {
                 let day = today.getDay();
-                let diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+                let diff = today.getDate() - day + (day === 0 ? -6 : 1); 
                 let mon = new Date(today.setDate(diff));
                 let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-                
-                start = mon.toISOString().split('T')[0];
-                end = sun.toISOString().split('T')[0];
+                start = mon.toISOString().split('T')[0]; end = sun.toISOString().split('T')[0];
                 
                 let pMon = new Date(mon); pMon.setDate(pMon.getDate() - 7);
                 let pSun = new Date(sun); pSun.setDate(pSun.getDate() - 7);
-                prevStart = pMon.toISOString().split('T')[0];
-                prevEnd = pSun.toISOString().split('T')[0];
+                prevStart = pMon.toISOString().split('T')[0]; prevEnd = pSun.toISOString().split('T')[0];
             }
             else if(currentMode === 'monthly') {
                 start = `${yyyy}-${mm}-01`;
-                let lastDay = new Date(yyyy, today.getMonth() + 1, 0);
-                end = `${yyyy}-${mm}-${lastDay.getDate()}`;
-                
+                let lastDay = new Date(yyyy, today.getMonth() + 1, 0); end = `${yyyy}-${mm}-${lastDay.getDate()}`;
                 let prevMonth = today.getMonth() === 0 ? 12 : today.getMonth();
                 let prevYear = today.getMonth() === 0 ? yyyy - 1 : yyyy;
-                let pmm = String(prevMonth).padStart(2, '0');
-                prevStart = `${prevYear}-${pmm}-01`;
-                let prevLastDay = new Date(prevYear, prevMonth, 0);
-                prevEnd = `${prevYear}-${pmm}-${prevLastDay.getDate()}`;
+                let pmm = String(prevMonth).padStart(2, '0'); prevStart = `${prevYear}-${pmm}-01`;
+                let prevLastDay = new Date(prevYear, prevMonth, 0); prevEnd = `${prevYear}-${pmm}-${prevLastDay.getDate()}`;
             }
             else if(currentMode === 'yearly') {
-                start = `${yyyy}-01-01`;
-                end = `${yyyy}-12-31`;
-                prevStart = `${yyyy-1}-01-01`;
-                prevEnd = `${yyyy-1}-12-31`;
+                start = `${yyyy}-01-01`; end = `${yyyy}-12-31`;
+                prevStart = `${yyyy-1}-01-01`; prevEnd = `${yyyy-1}-12-31`;
             }
             
             filterAndRender(start, end, prevStart, prevEnd);
         }
 
-        // Custom inputs processing
         function processData() {
-            if(currentMode !== 'custom') return; // Handled by smart tabs
-            
+            if(currentMode !== 'custom') return; 
             const subMode = document.getElementById('custom-mode').value;
-            let start, end, prevStart, prevEnd;
+            let start, end;
 
-            if (subMode === 'range') {
-                start = document.getElementById('date-start').value;
-                end = document.getElementById('date-end').value;
-            } else if (subMode === 'week') {
+            if (subMode === 'range') { start = document.getElementById('date-start').value; end = document.getElementById('date-end').value; } 
+            else if (subMode === 'week') {
                 const weekVal = document.getElementById('date-week').value; 
                 if(!weekVal) return;
-                let [y, w] = weekVal.split('-W');
-                let simple = new Date(y, 0, 1 + (w - 1) * 7);
-                let day = simple.getDay();
-                let diff = simple.getDate() - day + (day === 0 ? -6 : 1); 
-                let mon = new Date(simple.setDate(diff));
-                let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                let [y, w] = weekVal.split('-W'); let simple = new Date(y, 0, 1 + (w - 1) * 7);
+                let day = simple.getDay(); let diff = simple.getDate() - day + (day === 0 ? -6 : 1); 
+                let mon = new Date(simple.setDate(diff)); let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
                 start = mon.toISOString().split('T')[0]; end = sun.toISOString().split('T')[0];
             } else if (subMode === 'month') {
                 const monVal = document.getElementById('date-month').value;
                 if(!monVal) return;
-                start = monVal + "-01";
-                let d = new Date(monVal.split('-')[0], monVal.split('-')[1], 0);
-                end = monVal + "-" + d.getDate();
+                start = monVal + "-01"; let d = new Date(monVal.split('-')[0], monVal.split('-')[1], 0); end = monVal + "-" + d.getDate();
             }
-            
-            filterAndRender(start, end, start, end); // No variance for custom ranges to keep it simple
+            filterAndRender(start, end, start, end); 
+        }
+
+        // v17.2 CALCULATING TOTAL DOWN FROM THE 5 NEW COLUMNS
+        function getTotalDown(r) {
+            return (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0);
         }
 
         function filterAndRender(start, end, pStart, pEnd) {
@@ -462,7 +485,7 @@
 
         function updateKPIs() {
             const calc = (data) => {
-                const t = data.reduce((acc, r) => { acc.a += r.actual; acc.t += r.target; acc.d += r.down; return acc; }, {a:0, t:0, d:0});
+                const t = data.reduce((acc, r) => { acc.a += r.actual; acc.t += r.target; acc.d += getTotalDown(r); return acc; }, {a:0, t:0, d:0});
                 const eff = t.t > 0 ? (t.a/t.t*100) : 0;
                 return { yield: t.a, target: t.t, down: t.d, eff };
             };
@@ -481,35 +504,45 @@
                 const diff = isPct ? (c - p) : ((c - p) / p * 100);
                 const sym = diff >= 0 ? "↑" : "↓";
                 el.innerText = `${sym} ${Math.abs(diff).toFixed(1)}${isPct?'':'%'}`;
-                
-                let isGood = diff >= 0;
-                if(reverse) isGood = diff <= 0; // For downtime, going down is good
+                let isGood = diff >= 0; if(reverse) isGood = diff <= 0; 
                 el.className = `variance ${isGood ? 'up' : 'down'}`;
             };
 
             setVar('var-yield', curr.yield, prev.yield);
             setVar('var-eff', curr.eff, prev.eff, true);
-            setVar('var-down', curr.down, prev.down, false, true); // Downtime variance reversed
+            setVar('var-down', curr.down, prev.down, false, true); 
         }
 
+        // v17.2 RESTORED ACTION CELL WITH EDIT
         function renderTable() {
             document.getElementById('log-body').innerHTML = filteredData.map(r => `
                 <tr>
                     <td>${r.date}</td><td>${r.shift[0]}</td><td><b>${r.line}</b></td><td>${r.actual}</td><td>${r.target}</td>
-                    <td style="font-weight:bold; color:${(r.actual/r.target*100)<80 ? 'var(--danger)' : 'var(--success)'}">${(r.actual/r.target*100).toFixed(1)}%</td><td>${r.down}m</td>
-                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}"><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></td>
+                    <td style="font-weight:bold; color:${(r.actual/r.target*100)<80 ? 'var(--danger)' : 'var(--success)'}">${(r.actual/r.target*100).toFixed(1)}%</td><td>${getTotalDown(r)}m</td>
+                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}">
+                        <div class="action-cell">
+                            <button class="icon-btn" onclick="openEditModal(${r.id})">✏️</button>
+                            <button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
         }
 
+        // v17.2 SAVING MULTIPLE DOWNTIME COLUMNS
         async function saveData() {
             const btn = document.getElementById('transmit-btn'); 
             const entry = {
                 date: document.getElementById('f-date').value || new Date().toISOString().split('T')[0],
                 shift: document.getElementById('f-shift').value, line: document.getElementById('f-line').value,
                 target: parseInt(document.getElementById('f-target').value) || 0, actual: parseInt(document.getElementById('f-actual').value) || 0, 
-                run: parseInt(document.getElementById('f-run').value) || 480, down: parseInt(document.getElementById('f-down').value) || 0,
-                reason: document.getElementById('f-reason').value, comment: document.getElementById('f-comment').value,
+                run: parseInt(document.getElementById('f-run').value) || 480, 
+                down_mech: parseInt(document.getElementById('f-mech').value) || 0,
+                down_elec: parseInt(document.getElementById('f-elec').value) || 0,
+                down_mat: parseInt(document.getElementById('f-mat').value) || 0,
+                down_qc: parseInt(document.getElementById('f-qc').value) || 0,
+                down_pack: parseInt(document.getElementById('f-pack').value) || 0,
+                comment: document.getElementById('f-comment').value,
                 created_at: new Date().toISOString()
             };
             if (entry.target === 0 || entry.actual === 0) { alert("Target and Actual required."); return; }
@@ -517,10 +550,49 @@
             const { error } = await sb.from('production_logs').insert([entry]);
             if(!error) { 
                 await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ TRANSMIT RECORD"; }, 2000);
-                document.getElementById('f-actual').value = ''; document.getElementById('f-down').value = ''; document.getElementById('f-comment').value = '';
-            }
+                ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-comment'].forEach(id => document.getElementById(id).value = '');
+            } else { alert("DB Error: Did you run the SQL command in Supabase?"); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
-        async function deleteLog(id) { if(confirm("PERMANENT ACTION: Delete this log?")) { await sb.from('production_logs').delete().eq('id', id); fetchData(); } }
+
+        // v17.2 EDIT LOGIC
+        function openEditModal(id) {
+            const log = rawData.find(r => r.id === id);
+            if(!log) return;
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-target').value = log.target;
+            document.getElementById('edit-actual').value = log.actual;
+            document.getElementById('edit-mech').value = log.down_mech || 0;
+            document.getElementById('edit-elec').value = log.down_elec || 0;
+            document.getElementById('edit-mat').value = log.down_mat || 0;
+            document.getElementById('edit-qc').value = log.down_qc || 0;
+            document.getElementById('edit-pack').value = log.down_pack || 0;
+            document.getElementById('edit-comment').value = log.comment || '';
+            document.getElementById('edit-modal').style.display = 'block';
+            document.getElementById('main-overlay').style.display = 'block';
+        }
+
+        async function submitEdit() {
+            const id = document.getElementById('edit-id').value;
+            const updates = {
+                target: parseInt(document.getElementById('edit-target').value) || 0,
+                actual: parseInt(document.getElementById('edit-actual').value) || 0,
+                down_mech: parseInt(document.getElementById('edit-mech').value) || 0,
+                down_elec: parseInt(document.getElementById('edit-elec').value) || 0,
+                down_mat: parseInt(document.getElementById('edit-mat').value) || 0,
+                down_qc: parseInt(document.getElementById('edit-qc').value) || 0,
+                down_pack: parseInt(document.getElementById('edit-pack').value) || 0,
+                comment: document.getElementById('edit-comment').value
+            };
+            const { error } = await sb.from('production_logs').update(updates).eq('id', id);
+            if(!error) { closeModals(); await fetchData(); } else { alert("Failed to update."); }
+        }
+
+        async function deleteLog(id) { 
+            if(confirm("PERMANENT ACTION: Delete this log?")) { 
+                const { error } = await sb.from('production_logs').delete().eq('id', id); 
+                if(!error) fetchData(); 
+            } 
+        }
 
         function initCharts() {
             const cleanScales = { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(100,116,139,0.1)' } } };
@@ -528,7 +600,7 @@
             const animCfg = { duration: 600, easing: 'easeOutQuart' };
 
             charts.prod = new Chart(document.getElementById('prodChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Actual', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', fill: true, tension: 0.3, data: [] }, { label: 'Target', borderColor: '#94a3b8', borderDash:[4,4], data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'top', align: 'end' } }, scales: cleanScales } });
-            charts.util = new Chart(document.getElementById('utilChart'), { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b', '#10b981'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, cutout:'70%', plugins: { legend: { position: 'right' } } } });
+            charts.util = new Chart(document.getElementById('utilChart'), { type: 'doughnut', data: { labels: ['Mechanical', 'Electrical', 'Material', 'QC', 'Packer'], datasets: [{ data: [0,0,0,0,0], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b', '#10b981'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, cutout:'70%', plugins: { legend: { position: 'right' } } } });
             charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: LINE_LIST, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
             charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: LINE_LIST, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
             charts.shiftComp = new Chart(document.getElementById('shiftCompChart'), { type: 'bar', data: { labels: ['Day Shift', 'Night Shift'], datasets: [{ label: 'Total Output', backgroundColor: ['#f59e0b', '#2563eb'], data: [0, 0], borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(100,116,139,0.1)' } }, y: { grid: { display: false } } } } });
@@ -537,21 +609,24 @@
         function updateCharts() {
             if(!charts.prod) return;
             
-            // Trend Line
             const labels = [...new Set(filteredData.map(r => r.date))].sort();
             charts.prod.data.labels = labels;
             charts.prod.data.datasets[0].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+r.actual,0));
             charts.prod.data.datasets[1].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+r.target,0));
             charts.prod.update();
 
-            // Doughnut
-            const reasons = {};
-            filteredData.forEach(r => { if(r.down > 0) reasons[r.reason === "Normal" ? "Uncategorized" : r.reason] = (reasons[r.reason === "Normal" ? "Uncategorized" : r.reason] || 0) + r.down; });
-            charts.util.data.labels = Object.keys(reasons);
+            // v17.2: DOUGHNUT CHART NOW SUMS ACTUAL MINUTES LOST PER CATEGORY
+            const reasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
+            filteredData.forEach(r => { 
+                reasons.Mechanical += (r.down_mech || 0);
+                reasons.Electrical += (r.down_elec || 0);
+                reasons.Material += (r.down_mat || 0);
+                reasons.QC += (r.down_qc || 0);
+                reasons.Packer += (r.down_pack || 0);
+            });
             charts.util.data.datasets[0].data = Object.values(reasons);
             charts.util.update();
 
-            // Shift Charts Logic Re-added
             const updateShift = (chart, shift) => {
                 const vals = LINE_LIST.map(l => { 
                     const rs = filteredData.filter(x => x.line === l && x.shift === shift); 
@@ -576,27 +651,28 @@
             let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
             const yield = filteredData.reduce((s,r)=>s+r.actual,0);
             const target = filteredData.reduce((s,r)=>s+r.target,0);
-            const down = filteredData.reduce((s,r)=>s+r.down,0);
+            const down = filteredData.reduce((s,r)=>s+getTotalDown(r),0);
             const eff = target > 0 ? (yield/target*100).toFixed(1) : 0;
 
             let text = `========================================\nRCC EXECUTIVE ${modeText} SUMMARY\n========================================\n\n`;
             text += `[ KEY METRICS ]\nTotal Yield: ${yield.toLocaleString()}\nTarget: ${target.toLocaleString()}\nEfficiency: ${eff}%\nTotal Downtime: ${down} minutes\n\n`;
             
-            let lines = {}; let reasons = {};
+            let lines = {}; const reasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
             filteredData.forEach(r => { 
-                if(!lines[r.line]) lines[r.line] = {a:0, t:0, d:0};
-                lines[r.line].a += r.actual; lines[r.line].t += r.target; lines[r.line].d += r.down;
-                if(r.down > 0) reasons[r.reason] = (reasons[r.reason] || 0) + r.down;
+                if(!lines[r.line]) lines[r.line] = {a:0, t:0};
+                lines[r.line].a += r.actual; lines[r.line].t += r.target; 
+                reasons.Mechanical += (r.down_mech || 0); reasons.Electrical += (r.down_elec || 0);
+                reasons.Material += (r.down_mat || 0); reasons.QC += (r.down_qc || 0); reasons.Packer += (r.down_pack || 0);
             });
             
             let worst = Object.keys(lines).reduce((a,b) => (lines[a].a/lines[a].t) < (lines[b].a/lines[b].t) ? a : b);
-            let topReason = Object.keys(reasons).length > 0 ? Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b) : "None";
+            let topReason = Object.keys(reasons).reduce((a,b) => reasons[a] > reasons[b] ? a : b);
             
             text += `[ ANALYSIS ]\n> The plant operated at ${eff}% efficiency for this selected period.\n`;
             if(worst) text += `> Underperforming Asset: ${worst} showed the lowest efficiency of ${(lines[worst].a/lines[worst].t*100).toFixed(1)}%.\n`;
-            if(topReason !== "None") text += `> Primary Bottleneck: "${topReason}" issues were the leading cause of downtime.\n`;
+            if(reasons[topReason] > 0) text += `> Primary Bottleneck: ${topReason} delays caused the majority of lost time (${reasons[topReason]} mins).\n`;
             
-            text += `\n[ RECOMMENDATION ]\n> Focus preventive maintenance on ${worst} specifically targeting ${topReason} systems to recover lost yield.\n`;
+            text += `\n[ RECOMMENDATION ]\n> Target the root cause of ${topReason} downtime on ${worst} to recover lost yield.\n`;
 
             document.getElementById('report-content').innerText = text;
             document.getElementById('system-menu').classList.remove('active');
@@ -606,7 +682,7 @@
 
         function exportExcel() {
             if(filteredData.length === 0) return alert("No data to export.");
-            const wsData = filteredData.map(r => ({ "Date": r.date, "Shift": r.shift, "Line": r.line, "Actual": r.actual, "Target": r.target, "Eff %": (r.actual/r.target*100).toFixed(1), "Down (min)": r.down, "Reason": r.reason, "Comment": r.comment }));
+            const wsData = filteredData.map(r => ({ "Date": r.date, "Shift": r.shift, "Line": r.line, "Actual": r.actual, "Target": r.target, "Eff %": (r.actual/r.target*100).toFixed(1), "Total Down (min)": getTotalDown(r), "Mech (m)": r.down_mech||0, "Elec (m)": r.down_elec||0, "Mat (m)": r.down_mat||0, "QC (m)": r.down_qc||0, "Pack (m)": r.down_pack||0, "Comment": r.comment }));
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Filtered Logs");
             XLSX.writeFile(wb, `RCC_Filtered_Report.xlsx`);
         }
@@ -639,11 +715,39 @@
             if(confirm(`Reset PM clock for ${line}?`)) { pmData[line] = new Date().toISOString(); localStorage.setItem('rcc_bodyline_pm_dates', JSON.stringify(pmData)); openPMModal(); }
         }
 
+        // v17.2 REWRITTEN CHAT DELETION
         async function fetchComments() {
             const { data } = await sb.from('live_comments').select('*').order('created_at', {ascending: true}).limit(50);
-            if(data) document.getElementById('chat-box').innerHTML = data.map(c => `<div class="chat-msg" style="${c.user_name.includes("Admin") ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> <b>${c.user_name}</b> <span>${c.message}</span></div>`).join('');
+            if(data) {
+                document.getElementById('chat-box').innerHTML = data.map(c => {
+                    const isAdmin = c.user_name.includes("Admin") || c.user_name.includes("Engr.");
+                    // Check if current user is the author OR if they are an admin
+                    const canDelete = (c.user_name === currentUser) || isEngineer;
+                    const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
+                    
+                    return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> 
+                        ${delBtn} <b>${c.user_name}</b> <span>${c.message}</span>
+                    </div>`;
+                }).join('');
+                document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+            }
         }
-        async function sendComment() { const i = document.getElementById('chat-input'); if(i.value) { await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value }]); i.value = ''; } }
+        
+        async function sendComment() { 
+            const i = document.getElementById('chat-input'); 
+            if(i.value) { 
+                await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value }]); 
+                i.value = ''; 
+                fetchComments(); // Force immediate refresh
+            } 
+        }
+
+        async function deleteComment(id) { 
+            if(confirm("Remove this message?")) { 
+                await sb.from('live_comments').delete().eq('id', id); 
+                fetchComments(); // Force immediate refresh
+            } 
+        }
 
         function saveNotes() { localStorage.setItem('bodyline_notes', document.getElementById('prod-notepad').value); }
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
@@ -659,7 +763,7 @@
             if(isEngineer && document.getElementById('system-menu').classList.contains('active')) fetchAccessLogs();
         }
         
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
         
         function toggleTheme() { 
             document.body.classList.toggle('dark-mode'); 
