@@ -350,12 +350,11 @@
         function unlockSystem() {
             document.getElementById('user-display').innerText = currentUser;
             document.getElementById('user-avatar').innerText = currentUser.charAt(0).toUpperCase();
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = isEngineer ? 'block' : 'none');
             document.getElementById('portal-overlay').style.display = 'none';
             
-            initCharts(); fetchData(); fetchComments(); loadNotes();
+            initCharts(); fetchData(); fetchComments(); loadNotes(); fetchAccessLogs(); // <-- Added it here!
             setMode('daily', document.querySelector('.tab-btn')); 
-            setupRealtime();
         }
 
         async function recordAccess(msg) { await sb.from('access_logs').insert([{ user_name: msg }]); }
