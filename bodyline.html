@@ -746,10 +746,22 @@
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
 
         async function fetchAccessLogs() {
-            const { data } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(30);
-            if(data) document.getElementById('access-log-display').innerHTML = data.map(l => `<div style="padding:4px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim)">[${new Date(l.created_at).toLocaleTimeString()}]</span> ${l.user_name}</div>`).join('');
+            const display = document.getElementById('access-log-display');
+            display.innerHTML = "<span style='color:var(--text-dim);'>Loading security logs...</span>";
+            
+            const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
+            
+            if(error) { 
+                display.innerHTML = "<span style='color:var(--danger);'>Error connecting to database.</span>"; 
+                return; 
+            }
+            
+            if(data && data.length > 0) { 
+                display.innerHTML = data.map(l => `<div style="padding:5px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:9px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join('');
+            } else {
+                display.innerHTML = "<span style='color:var(--text-dim);'>No access logs found.</span>";
+            }
         }
-
         function toggleMenu() { 
             document.getElementById('system-menu').classList.toggle('active'); 
             document.getElementById('main-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; 
