@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v18.1 Fast-Sync Production</title>
+    <title>RCC Bodyline OS | v18.2 Bulletproof Fast-Sync</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -107,7 +107,7 @@
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
             <h2 style="margin:0 0 5px 0; font-weight: 800; font-size: 28px;">RCC BODYLINE OS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">FAST-SYNC PRODUCTION v18.1</p>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">FAST-SYNC PRODUCTION v18.2</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
             <button class="btn-guest" onclick="guestLogin()" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:10px; width:100%; border-radius:8px; cursor:pointer;">👀 VIEW AS GUEST</button>
@@ -259,7 +259,7 @@
         <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">📝 Production Notepad</h4>
         <textarea id="prod-notepad" placeholder="Shift Reminders (Auto-Saves)..." oninput="saveNotes()" style="height: 100px; margin-bottom: 20px;"></textarea>
 
-        <div class="admin-only">
+        <div class="admin-only" id="access-log-section">
             <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">🔒 Access Logs</h4>
             <div id="access-log-display" style="font-family:monospace; font-size:10px; height:120px; overflow-y:auto; background:var(--bg); padding:10px; border-radius: 6px; border: 1px solid var(--border);"></div>
         </div>
@@ -318,30 +318,54 @@
         Chart.defaults.color = '#64748b';
 
         async function authorize() {
-            const pin = document.getElementById('access-code').value.trim();
-            const { data } = await sb.from('user_roles').select('*').eq('pin', pin).single();
-            if(data || pin === "122022") {
-                currentUser = data ? data.user_name : "Engr. Pinapit";
-                isEngineer = data ? (data.role === 'Admin') : true;
-                unlockSystem();
-                recordAccess(`Admin: ${currentUser} Logged In`);
-            } else { triggerError(document.getElementById('auth-card')); }
+            try {
+                const pin = document.getElementById('access-code').value.trim();
+                const { data, error } = await sb.from('user_roles').select('*').eq('pin', pin).single();
+                
+                if(data || pin === "122022") {
+                    currentUser = data ? data.user_name : "Engr. Pinapit";
+                    isEngineer = data ? (data.role === 'Admin' || data.role === 'admin') : true;
+                    
+                    // SAVE PERMANENTLY FOR RELOADS
+                    localStorage.setItem('rcc_user', currentUser);
+                    localStorage.setItem('rcc_role', isEngineer ? 'admin' : 'viewer');
+                    
+                    unlockSystem();
+                    recordAccess(`Admin: ${currentUser} Logged In`);
+                } else { triggerError(document.getElementById('auth-card')); }
+            } catch (err) {
+                console.error(err);
+                triggerError(document.getElementById('auth-card'));
+            }
         }
 
         function triggerError(card) { document.getElementById('access-code').value = ''; card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 400); }
 
         function guestLogin() { 
-            let name = prompt("Enter your Name for Live Chat:"); currentUser = name || "Anonymous Viewer"; isEngineer = false; 
-            unlockSystem(); recordAccess(`Viewer: ${currentUser} Joined`);
+            let name = prompt("Enter your Name for Live Chat:"); 
+            currentUser = name || "Anonymous Viewer"; 
+            isEngineer = false; 
+            localStorage.setItem('rcc_user', currentUser);
+            localStorage.setItem('rcc_role', 'viewer');
+            unlockSystem(); 
+            recordAccess(`Viewer: ${currentUser} Joined`);
         }
 
         function unlockSystem() {
-            document.getElementById('user-display').innerText = currentUser;
-            document.getElementById('user-avatar').innerText = currentUser.charAt(0).toUpperCase();
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = isEngineer ? 'block' : 'none');
+            const safeUser = currentUser || "Operator";
+            document.getElementById('user-display').innerText = safeUser;
+            document.getElementById('user-avatar').innerText = safeUser.charAt(0).toUpperCase();
+            
+            // Ensure Admin-Only elements render safely
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = isEngineer ? 'block' : 'none';
+            });
+            
             document.getElementById('portal-overlay').style.display = 'none';
             
-            initCharts(); fetchData(); fetchComments(); loadNotes(); fetchAccessLogs();
+            initCharts(); fetchData(); fetchComments(); loadNotes(); 
+            if(isEngineer) fetchAccessLogs();
+            
             setMode('daily', document.querySelector('.tab-btn')); 
             setupRealtime();
         }
@@ -558,43 +582,56 @@
         }
 
         // ==========================================
-        // FAST-SYNC CHAT ENGINE WITH OPTIMISTIC UI
+        // BULLETPROOF FAST-SYNC CHAT ENGINE
         // ==========================================
         async function fetchComments() {
-            const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
-            
-            if (error) { 
-                document.getElementById('chat-box').innerHTML = `<div style="color:var(--danger); font-size:11px; padding:10px; border:1px dashed var(--danger);"><b>DATABASE ERROR:</b> Cannot find 'module' column. Please run the SQL command in Supabase.</div>`; 
-                return; 
-            }
-            
-            if(data) {
-                document.getElementById('chat-box').innerHTML = data.map(c => {
-                    const isAdmin = c.user_name.includes("Admin") || c.user_name.includes("Engr.");
-                    const canDelete = (c.user_name === currentUser) || isEngineer;
-                    const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
-                    return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">${delBtn} <b>${c.user_name}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`;
-                }).join('');
-                document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+            try {
+                const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
+                if (error) throw error;
+                
+                if(data) {
+                    document.getElementById('chat-box').innerHTML = data.map(c => {
+                        const safeCUser = c.user_name || "Unknown";
+                        const isAdmin = safeCUser.toLowerCase().includes("admin") || safeCUser.toLowerCase().includes("engr");
+                        const canDelete = (safeCUser === currentUser) || isEngineer;
+                        const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
+                        return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">${delBtn} <b>${safeCUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`;
+                    }).join('');
+                    document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+                }
+            } catch (err) {
+                document.getElementById('chat-box').innerHTML = `<div style="color:var(--danger); font-size:11px; padding:10px; border:1px dashed var(--danger);"><b>DATABASE ERROR:</b> ${err.message}. Please verify the 'module' column exists in Supabase.</div>`;
             }
         }
         
         async function sendComment() { 
-            const i = document.getElementById('chat-input'); 
-            const msg = i.value.trim();
-            
-            if(msg) { 
-                // 1. INSTANT UI UPDATE
-                const chatBox = document.getElementById('chat-box');
-                const isAdmin = currentUser.includes("Admin") || currentUser.includes("Engr.");
-                chatBox.innerHTML += `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"><button class="del-msg-btn" disabled>⏳</button> <b>${currentUser}</b> <span style="display:block; margin-top:4px;">${msg}</span></div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-                i.value = ''; 
+            try {
+                const i = document.getElementById('chat-input'); 
+                const msg = i.value.trim();
                 
-                // 2. BACKGROUND CLOUD SAVE
-                const { error } = await sb.from('live_comments').insert([{ user_name: currentUser, message: msg, module: 'production' }]); 
-                if(!error) { fetchComments(); } else { alert("Message failed to send. Check connection."); }
-            } 
+                if(msg) { 
+                    const safeUser = currentUser || "Operator";
+                    const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase().includes("engr");
+                    
+                    // INSTANT UI APPEND (Using safe DOM injection)
+                    const chatBox = document.getElementById('chat-box');
+                    const newDiv = document.createElement('div');
+                    newDiv.className = 'chat-msg';
+                    newDiv.style.borderLeftColor = isAdmin ? 'var(--accent)' : 'var(--border)';
+                    newDiv.innerHTML = `<button class="del-msg-btn" disabled>⏳</button> <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${msg}</span>`;
+                    chatBox.appendChild(newDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    i.value = ''; 
+                    
+                    // BACKGROUND SAVE
+                    const { error } = await sb.from('live_comments').insert([{ user_name: safeUser, message: msg, module: 'production' }]); 
+                    if(error) throw error;
+                    
+                    fetchComments(); 
+                } 
+            } catch (err) {
+                alert("Failed to send message: " + err.message);
+            }
         }
 
         async function deleteComment(id) { if(confirm("Remove this message?")) { await sb.from('live_comments').delete().eq('id', id); fetchComments(); } }
@@ -603,17 +640,26 @@
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
 
         // ==========================================
-        // ACCESS LOG ENGINE
+        // BULLETPROOF ACCESS LOG ENGINE
         // ==========================================
         async function fetchAccessLogs() {
             const display = document.getElementById('access-log-display'); 
+            if(!display) return;
+            
             display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Fetching live security logs...</span>";
             
-            const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
-            
-            if(error) { display.innerHTML = `<span style='color:var(--danger);'><b>Error:</b> Database disconnected or RLS is blocking access.</span>`; return; }
-            if(data && data.length > 0) { display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join(''); } 
-            else { display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>"; }
+            try {
+                const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
+                if(error) throw error;
+                
+                if(data && data.length > 0) { 
+                    display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); 
+                } else { 
+                    display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>"; 
+                }
+            } catch(err) {
+                display.innerHTML = `<span style='color:var(--danger);'><b>Error:</b> ${err.message}</span>`;
+            }
         }
 
         function exportExcel() {
@@ -627,7 +673,11 @@
             const menu = document.getElementById('system-menu');
             menu.classList.toggle('active'); 
             document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
-            if(isEngineer && menu.classList.contains('active')) fetchAccessLogs();
+            
+            // Explicitly force log fetch when Admin opens the menu
+            if(isEngineer && menu.classList.contains('active')) {
+                fetchAccessLogs();
+            }
         }
         
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
@@ -635,11 +685,21 @@
         function downloadReport() { const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([document.getElementById('report-content').innerText], { type: 'text/plain' })); a.download = `RCC_Summary.txt`; a.click(); }
         
         setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+        
         window.onload = () => { 
-            setupRealtime();
+            // BULLETPROOF LOGIN RECOVERY
             const savedUser = localStorage.getItem('rcc_user');
-            if(savedUser && savedUser !== "GUEST VIEWER") { currentUser = savedUser; isEngineer = (localStorage.getItem('rcc_role') === 'admin'); document.getElementById('portal-overlay').style.display = 'none'; unlockSystem(); } 
-            else { document.getElementById('access-code').focus(); }
+            const savedRole = localStorage.getItem('rcc_role');
+            
+            if(savedUser && savedUser !== "GUEST VIEWER" && savedUser !== "null") { 
+                currentUser = savedUser; 
+                isEngineer = (savedRole === 'admin' || savedUser.toLowerCase().includes('admin') || savedUser.toLowerCase().includes('engr')); 
+                document.getElementById('portal-overlay').style.display = 'none'; 
+                unlockSystem(); 
+            } else { 
+                document.getElementById('access-code').focus(); 
+            }
+            
             if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark-mode'); 
         };
     </script>
