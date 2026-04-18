@@ -11,17 +11,8 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
-        :root {
-            --bg: #f8fafc; --surface: #ffffff; --accent: #2563eb; 
-            --text: #0f172a; --text-dim: #64748b; --border: #e2e8f0;
-            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-        }
-
-        body.dark-mode {
-            --bg: #0f172a; --surface: #1e293b; --accent: #3b82f6; 
-            --text: #f8fafc; --text-dim: #94a3b8; --border: #334155;
-        }
-
+        :root { --bg: #f8fafc; --surface: #ffffff; --accent: #2563eb; --text: #0f172a; --text-dim: #64748b; --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
+        body.dark-mode { --bg: #0f172a; --surface: #1e293b; --accent: #3b82f6; --text: #f8fafc; --text-dim: #94a3b8; --border: #334155; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
 
         #andon-banner { display: none; width: 100%; background: var(--danger); color: white; text-align: center; font-weight: 800; padding: 12px; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; z-index: 9000; position: sticky; top: 0; }
@@ -313,8 +304,15 @@
         let rawData = []; let filteredData = []; let previousData = [];
         let isEngineer = false; let currentUser = "GUEST"; let charts = {}; let currentMode = 'daily';
         
+        // Comprehensive Asset Array mapped for Production
         const LINE_LIST = [
-            'Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'
+            'Line 1 / SOUCAN 640', 'Line 1 / FREI-APC & YUAN-ROX OVEN',
+            'Line 2 / CANMAN X-7', 'Line 2 / FREI-EPC & YUAN-ROX OVEN',
+            'Line 3 / SOUCAN 650', 'Line 3 / FREI-CPC & YUAN-ROX OVEN',
+            'Line 4 / FBB 5600 KM 13697', 'Line 4 / FREI-EPC & FREI-PCA OVEN',
+            'Line 5 / FBB 5600 KM 13640', 'Line 5 / YUAN-ROX OVEN',
+            'Line 6 / SOUCAN 650', 'Line 6 / FREI-CPC & YUAN-ROX OVEN',
+            'SLITTER / MAWAG', 'SLITTER / S-B34'
         ];
 
         Chart.defaults.font.family = "'Inter', sans-serif";
@@ -504,8 +502,9 @@
             charts.prod = new Chart(document.getElementById('prodChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Actual', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', fill: true, tension: 0.3, data: [] }, { label: 'Target', borderColor: '#94a3b8', borderDash:[4,4], data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'top', align: 'end' } }, scales: cleanScales } });
             charts.util = new Chart(document.getElementById('utilChart'), { type: 'doughnut', data: { labels: ['Mechanical', 'Electrical', 'Material', 'QC', 'Packer'], datasets: [{ data: [0,0,0,0,0], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b', '#10b981'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, cutout:'70%', plugins: { legend: { position: 'right' } } } });
             
-            charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: LINE_LIST, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
-            charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: LINE_LIST, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
+            const groupLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'];
+            charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
+            charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
             charts.shiftComp = new Chart(document.getElementById('shiftCompChart'), { type: 'bar', data: { labels: ['Day Shift', 'Night Shift'], datasets: [{ label: 'Total Output', backgroundColor: ['#f59e0b', '#2563eb'], data: [0, 0], borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(100,116,139,0.1)' } }, y: { grid: { display: false } } } } });
         }
 
@@ -518,8 +517,9 @@
             filteredData.forEach(r => { reasons.Mechanical += (r.down_mech || 0); reasons.Electrical += (r.down_elec || 0); reasons.Material += (r.down_mat || 0); reasons.QC += (r.down_qc || 0); reasons.Packer += (r.down_pack || 0); });
             charts.util.data.datasets[0].data = Object.values(reasons); charts.util.update();
 
+            const groupLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'];
             const updateShift = (chart, shift) => {
-                const vals = LINE_LIST.map(baseLine => { 
+                const vals = groupLabels.map(baseLine => { 
                     const rs = filteredData.filter(x => x.line.startsWith(baseLine) && x.shift === shift); 
                     const a = rs.reduce((s,x)=>s+x.actual,0), t = rs.reduce((s,x)=>s+x.target,0); 
                     return t > 0 ? (a/t*100) : 0; 
@@ -558,15 +558,9 @@
             document.getElementById('system-menu').classList.remove('active'); document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
         }
 
-     // 1. UPGRADED CHAT ENGINE (WITH ERROR DETECTION)
         async function fetchComments() {
             const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
-            
-            if (error) {
-                document.getElementById('chat-box').innerHTML = `<div style="color:var(--danger); font-size:11px; padding:10px; border:1px dashed var(--danger);"><b>DATABASE ERROR:</b> Cannot find 'module' column. Please run the SQL command in Supabase.</div>`;
-                return;
-            }
-            
+            if (error) { document.getElementById('chat-box').innerHTML = `<div style="color:var(--danger); font-size:11px; padding:10px; border:1px dashed var(--danger);"><b>DATABASE ERROR:</b> Cannot find 'module' column. Please run the SQL command in Supabase.</div>`; return; }
             if(data) {
                 document.getElementById('chat-box').innerHTML = data.map(c => {
                     const isAdmin = c.user_name.includes("Admin") || c.user_name.includes("Engr.");
@@ -577,37 +571,6 @@
                 document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
             }
         }
-
-        // 2. UPGRADED ACCESS LOG (WITH REFRESH TRIGGER)
-        async function fetchAccessLogs() {
-            const display = document.getElementById('access-log-display'); 
-            display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Fetching live security logs...</span>";
-            
-            const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
-            
-            if(error) { 
-                display.innerHTML = `<span style='color:var(--danger);'><b>Error:</b> Database disconnected or RLS is blocking access.</span>`; 
-                return; 
-            }
-            
-            if(data && data.length > 0) { 
-                display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join(''); 
-            } else { 
-                display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>"; 
-            }
-        }
-
-        // 3. UPGRADED MENU TOGGLE (FORCES LOG REFRESH WHEN CLICKED)
-        function toggleMenu() { 
-            const menu = document.getElementById('system-menu');
-            menu.classList.toggle('active'); 
-            document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
-            
-            // Force fetch logs every time the admin opens the gear menu
-            if(isEngineer && menu.classList.contains('active')) {
-                fetchAccessLogs();
-            }
-        }
         
         async function sendComment() { const i = document.getElementById('chat-input'); if(i.value) { await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value, module: 'production' }]); i.value = ''; fetchComments(); } }
         async function deleteComment(id) { if(confirm("Remove this message?")) { await sb.from('live_comments').delete().eq('id', id); fetchComments(); } }
@@ -616,11 +579,11 @@
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
 
         async function fetchAccessLogs() {
-            const display = document.getElementById('access-log-display'); display.innerHTML = "<span style='color:var(--text-dim);'>Loading security logs...</span>";
+            const display = document.getElementById('access-log-display'); display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Fetching live security logs...</span>";
             const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
-            if(error) { display.innerHTML = "<span style='color:var(--danger);'>Error connecting to database.</span>"; return; }
-            if(data && data.length > 0) { display.innerHTML = data.map(l => `<div style="padding:5px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:9px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join(''); } 
-            else { display.innerHTML = "<span style='color:var(--text-dim);'>No logs found.</span>"; }
+            if(error) { display.innerHTML = `<span style='color:var(--danger);'><b>Error:</b> Database disconnected or RLS is blocking access.</span>`; return; }
+            if(data && data.length > 0) { display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join(''); } 
+            else { display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>"; }
         }
 
         function exportExcel() {
@@ -630,7 +593,13 @@
             XLSX.writeFile(wb, `RCC_Filtered_Report.xlsx`);
         }
 
-        function toggleMenu() { document.getElementById('system-menu').classList.toggle('active'); document.getElementById('main-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; }
+        function toggleMenu() { 
+            const menu = document.getElementById('system-menu');
+            menu.classList.toggle('active'); 
+            document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
+            if(isEngineer && menu.classList.contains('active')) fetchAccessLogs();
+        }
+        
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
         function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); if(charts.prod){ Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'; Object.values(charts).forEach(c => c.update()); } }
         function downloadReport() { const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([document.getElementById('report-content').innerText], { type: 'text/plain' })); a.download = `RCC_Summary.txt`; a.click(); }
