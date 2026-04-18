@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v18.3 Bulletproof</title>
+    <title>RCC Bodyline OS | v18.4 Nuclear Diagnostics</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -107,7 +107,7 @@
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
             <h2 style="margin:0 0 5px 0; font-weight: 800; font-size: 28px;">RCC BODYLINE OS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">PRODUCTION TRACKING v18.3</p>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">DIAGNOSTIC BUILD v18.4</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
             <button class="btn-guest" onclick="guestLogin()" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:10px; width:100%; border-radius:8px; cursor:pointer;">👀 VIEW AS GUEST</button>
@@ -259,8 +259,11 @@
         <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">📝 Production Notepad</h4>
         <textarea id="prod-notepad" placeholder="Shift Reminders (Auto-Saves)..." oninput="saveNotes()" style="height: 100px; margin-bottom: 20px;"></textarea>
 
-        <div class="admin-only" id="access-log-section">
-            <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">🔒 Access Logs</h4>
+        <div id="access-log-section" style="margin-top: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin:0;">🔒 Access Logs</h4>
+                <button onclick="fetchAccessLogs()" style="background:var(--accent); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:9px; cursor:pointer; font-weight:bold;">↻ REFRESH</button>
+            </div>
             <div id="access-log-display" style="font-family:monospace; font-size:10px; height:120px; overflow-y:auto; background:var(--bg); padding:10px; border-radius: 6px; border: 1px solid var(--border);"></div>
         </div>
 
@@ -352,14 +355,8 @@
                 
                 document.getElementById('portal-overlay').style.display = 'none';
                 
-                // FORCE REALTIME TO CONNECT BEFORE ANYTHING ELSE
                 setupRealtime();
-                
-                initCharts(); 
-                fetchData(); 
-                fetchComments(); 
-                loadNotes(); 
-                if(isEngineer) fetchAccessLogs();
+                initCharts(); fetchData(); fetchComments(); loadNotes(); 
                 
                 setMode('daily', document.querySelector('.tab-btn')); 
             } catch (e) {
@@ -367,7 +364,15 @@
             }
         }
 
-        async function recordAccess(msg) { await sb.from('access_logs').insert([{ user_name: msg }]); }
+        // NUCLEAR FIX: Catching errors when saving access log
+        async function recordAccess(msg) { 
+            try {
+                const { error } = await sb.from('access_logs').insert([{ user_name: msg }]); 
+                if(error) console.error("Access Log Insert Error:", error.message);
+            } catch(e) {
+                console.error("Access Log System Failure:", e);
+            }
+        }
 
         function setupRealtime() {
             const dot = document.getElementById('cloud-dot');
@@ -378,18 +383,11 @@
                   .on('postgres_changes', { event: '*', schema: 'public', table: 'production_logs' }, () => fetchData())
                   .on('postgres_changes', { event: '*', schema: 'public', table: 'live_comments' }, () => fetchComments())
                   .subscribe((status) => {
-                      if(status === 'SUBSCRIBED') {
-                          dot.className = "status-dot dot-online";
-                          text.innerText = "LIVE SYNC ACTIVE";
-                      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                          dot.className = "status-dot dot-offline";
-                          text.innerText = "SYNC ERROR";
-                      }
+                      if(status === 'SUBSCRIBED') { dot.className = "status-dot dot-online"; text.innerText = "LIVE SYNC ACTIVE"; } 
+                      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { dot.className = "status-dot dot-offline"; text.innerText = "SYNC ERROR"; }
                   });
             } catch (e) {
-                dot.className = "status-dot dot-offline";
-                text.innerText = "SYNC OFFLINE";
-                console.error(e);
+                dot.className = "status-dot dot-offline"; text.innerText = "SYNC OFFLINE";
             }
         }
 
@@ -454,13 +452,12 @@
         function getTotalDown(r) { return (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0); }
 
         function filterAndRender(start, end, pStart, pEnd) {
-            // IMMUNE FILTERING: Checks to make sure date exists before parsing
             filteredData = rawData.filter(r => r && r.date && r.date >= start && r.date <= end);
             previousData = pStart ? rawData.filter(r => r && r.date && r.date >= pStart && r.date <= pEnd) : [];
             
-            try { updateKPIs(); } catch (e) { console.error("KPI Error:", e); }
-            try { renderTable(); } catch (e) { console.error("Table Error:", e); }
-            try { updateCharts(); } catch (e) { console.error("Chart Error:", e); }
+            try { updateKPIs(); } catch (e) { console.error(e); }
+            try { renderTable(); } catch (e) { console.error(e); }
+            try { updateCharts(); } catch (e) { console.error(e); }
         }
 
         function updateKPIs() {
@@ -487,7 +484,6 @@
 
         function renderTable() {
             document.getElementById('log-body').innerHTML = filteredData.map(r => {
-                // SAFEGUARD AGAINST NULL VALUES
                 let safeShift = r.shift ? r.shift[0] : '-';
                 let safeLine = r.line || 'Unknown Asset';
                 let safeActual = r.actual || 0;
@@ -568,7 +564,6 @@
             const groupLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'];
             const updateShift = (chart, shift) => {
                 const vals = groupLabels.map(baseLine => { 
-                    // BULLETPROOF: Ensure line exists before calling startsWith
                     const rs = filteredData.filter(x => x.line && x.line.startsWith(baseLine) && x.shift === shift); 
                     const a = rs.reduce((s,x)=>s+(x.actual||0),0), t = rs.reduce((s,x)=>s+(x.target||0),0); 
                     return t > 0 ? (a/t*100) : 0; 
@@ -608,9 +603,6 @@
             document.getElementById('system-menu').classList.remove('active'); document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
         }
 
-        // ==========================================
-        // FAST-SYNC CHAT ENGINE
-        // ==========================================
         async function fetchComments() {
             try {
                 const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
@@ -640,7 +632,6 @@
                     const safeUser = currentUser || "Operator";
                     const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase().includes("engr");
                     
-                    // INSTANT UI APPEND
                     const chatBox = document.getElementById('chat-box');
                     const newDiv = document.createElement('div');
                     newDiv.className = 'chat-msg';
@@ -650,7 +641,6 @@
                     chatBox.scrollTop = chatBox.scrollHeight;
                     i.value = ''; 
                     
-                    // BACKGROUND SAVE
                     const { error } = await sb.from('live_comments').insert([{ user_name: safeUser, message: msg, module: 'production' }]); 
                     if(error) throw error;
                     
@@ -666,26 +656,25 @@
         function saveNotes() { localStorage.setItem('bodyline_notes', document.getElementById('prod-notepad').value); }
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
 
-        // ==========================================
-        // BULLETPROOF ACCESS LOG ENGINE
-        // ==========================================
+        // NUCLEAR FIX: DIAGNOSTIC ACCESS LOGS
         async function fetchAccessLogs() {
             const display = document.getElementById('access-log-display'); 
             if(!display) return;
             
-            display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Fetching live security logs...</span>";
+            display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Pinging Supabase for logs...</span>";
             
-            const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
-            
-            if(error) { 
-                display.innerHTML = `<span style='color:var(--danger);'><b>Error:</b> ${error.message} (Check RLS Settings)</span>`; 
-                return; 
-            }
-            
-            if(data && data.length > 0) { 
-                display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); 
-            } else { 
-                display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>"; 
+            try {
+                const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
+                
+                if(error) throw error;
+                
+                if(data && data.length > 0) { 
+                    display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); 
+                } else { 
+                    display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet in database.</span>"; 
+                }
+            } catch(err) {
+                display.innerHTML = `<span style='color:var(--danger);'><b>DB ERROR:</b> ${err.message}<br><br><i>Action: Ensure 'access_logs' table exists and RLS is disabled in Supabase.</i></span>`;
             }
         }
 
@@ -701,8 +690,8 @@
             menu.classList.toggle('active'); 
             document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
             
-            // EXPLICIT TRIGGER
-            if(isEngineer && menu.classList.contains('active')) {
+            // ALWAYS run the access log fetch when opening the menu for diagnostics
+            if(menu.classList.contains('active')) {
                 fetchAccessLogs();
             }
         }
