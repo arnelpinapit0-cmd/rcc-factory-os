@@ -22,11 +22,12 @@
         .btn-guest { background: transparent; border: 1px solid var(--border); color: var(--text-dim); margin-top: 15px; }
         .shake { animation: shakeError 0.4s forwards; border-color: #ef4444 !important; }
         @keyframes shakeError { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
-        #hub-screen { display: none; opacity: 0; flex-direction: column; align-items: center; width: 100%; max-width: 1200px; padding: 20px; transition: opacity 0.6s ease; }
-        .welcome-banner { text-align: center; margin-bottom: 50px; }
+        
+        #hub-screen { display: none; opacity: 0; flex-direction: column; align-items: center; width: 100%; max-width: 1400px; padding: 20px; transition: opacity 0.6s ease; height: 90vh; overflow-y: auto;}
+        .welcome-banner { text-align: center; margin-bottom: 40px; }
         .welcome-banner h1 { font-size: 36px; margin: 0 0 10px 0; font-weight: 800; letter-spacing: 1px;}
         .welcome-banner p { color: var(--text-dim); margin: 0; font-size: 14px; }
-        .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; width: 100%; }
+        .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%; }
         .app-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; text-decoration: none; color: var(--text); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: flex-start; backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; overflow: hidden; cursor: pointer;}
         .app-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--text-dim); transition: 0.3s; }
         .app-card:hover { transform: translateY(-5px); border-color: var(--accent); background: rgba(30, 41, 59, 0.8); }
@@ -34,8 +35,6 @@
         .app-icon { font-size: 40px; margin-bottom: 15px; display: inline-block; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; }
         .app-title { font-size: 18px; font-weight: 800; margin: 0 0 10px 0; letter-spacing: -0.5px;}
         .app-desc { font-size: 12px; color: var(--text-dim); margin: 0; line-height: 1.5; }
-        .loader { display: none; margin-top: 15px; color: var(--accent); font-size: 12px; font-weight: bold; letter-spacing: 2px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -43,38 +42,37 @@
     <div class="ui-layer">
         <div id="login-screen">
             <h1 class="logo-text">RCC OS</h1>
-            <span class="sub-text">ENTERPRISE HUB</span>
+            <span class="sub-text">INDUSTRY 4.0 HUB</span>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">AUTHENTICATE</button>
             <button class="btn btn-guest" onclick="guestLogin()">PROCEED AS VIEWER</button>
-            <div class="loader" id="login-loader">VERIFYING CREDENTIALS...</div>
         </div>
 
         <div id="hub-screen">
             <div class="welcome-banner">
                 <h1 id="welcome-text">Welcome, Operator.</h1>
-                <p>Select a facility module to proceed.</p>
+                <p>Select an Enterprise Module to proceed.</p>
             </div>
             <div class="app-grid">
                 <div onclick="accessModule('bodyline.html', 'any')" class="app-card">
-                    <span class="app-icon">🏭</span>
-                    <h2 class="app-title">Bodyline Production</h2>
-                    <p class="app-desc">View real-time efficiency, output targets, downtime tracking, and shift analytics.</p>
+                    <span class="app-icon">🏭</span><h2 class="app-title">Bodyline Production</h2>
+                    <p class="app-desc">Real-time yields, downtime monitoring, and QC Scrap Pareto analytics.</p>
                 </div>
                 <div onclick="accessModule('cmms.html', 'admin')" class="app-card">
-                    <span class="app-icon">🔧</span>
-                    <h2 class="app-title">CMMS Maintenance</h2>
-                    <p class="app-desc">Interactive fleet roadmap, digital checklists, hour meter tracking, and PM sign-offs. (ADMIN ONLY)</p>
+                    <span class="app-icon">🔧</span><h2 class="app-title">CMMS Maintenance</h2>
+                    <p class="app-desc">Digital Roadmap, interactive PM checklists, and Digital SOPs. (ADMIN)</p>
                 </div>
                 <div onclick="accessModule('chillers.html', 'admin')" class="app-card">
-                    <span class="app-icon">❄️</span>
-                    <h2 class="app-title">Chiller Diagnostics</h2>
-                    <p class="app-desc">Daily checkups, temperature monitoring, and predictive maintenance for cooling units. (ADMIN ONLY)</p>
+                    <span class="app-icon">❄️</span><h2 class="app-title">Chiller Diagnostics</h2>
+                    <p class="app-desc">Thermal variance, amperage tracking, and predictive warnings. (ADMIN)</p>
+                </div>
+                <div onclick="accessModule('power.html', 'admin')" class="app-card">
+                    <span class="app-icon">⚡</span><h2 class="app-title">Facility Power Grid</h2>
+                    <p class="app-desc">Genset status, total plant loads, and fuel consumption tracking. (ADMIN)</p>
                 </div>
                 <div onclick="accessModule('#', 'admin')" class="app-card">
-                    <span class="app-icon">⚡</span>
-                    <h2 class="app-title">Facility Power Grid</h2>
-                    <p class="app-desc">Monitor energy consumption, peak load times, and generator health. (IN DEVELOPMENT)</p>
+                    <span class="app-icon">📦</span><h2 class="app-title">Digital Stockroom</h2>
+                    <p class="app-desc">Live inventory tracking for spare parts, oils, and machine components. (IN DEV)</p>
                 </div>
             </div>
         </div>
@@ -88,28 +86,22 @@
         async function authorize() {
             const pin = document.getElementById('access-code').value.trim(); 
             const card = document.getElementById('login-screen');
-            const btn = document.getElementById('login-btn');
-            const loader = document.getElementById('login-loader');
             if(!pin) { triggerError(card); return; }
-            btn.style.display = 'none'; loader.style.display = 'block';
-
             try {
                 const { data } = await sb.from('user_roles').select('*').eq('pin', pin).single();
                 if(data || pin === "122022") {
                     let userName = data ? data.user_name : "Engr. Pinapit";
-                    let isEng = data ? (data.role === 'Admin') : true;
-                    localStorage.setItem('rcc_user', userName);
-                    localStorage.setItem('rcc_role', isEng ? 'admin' : 'viewer');
+                    let isEng = data ? (data.role.toLowerCase() === 'admin') : true;
+                    localStorage.setItem('rcc_user', userName); localStorage.setItem('rcc_role', isEng ? 'admin' : 'viewer');
                     transitionToHub(userName);
-                } else { triggerError(card); btn.style.display = 'block'; loader.style.display = 'none'; }
-            } catch (err) { triggerError(card); btn.style.display = 'block'; loader.style.display = 'none'; }
+                } else { triggerError(card); }
+            } catch (err) { triggerError(card); }
         }
 
         function guestLogin() {
             let guestName = prompt("Enter your Name:"); 
             let userName = guestName ? guestName : "Anonymous Viewer";
-            localStorage.setItem('rcc_user', userName);
-            localStorage.setItem('rcc_role', 'viewer');
+            localStorage.setItem('rcc_user', userName); localStorage.setItem('rcc_role', 'viewer');
             transitionToHub(userName);
         }
 
@@ -128,15 +120,11 @@
 
         function accessModule(url, requiredRole) {
             const role = localStorage.getItem('rcc_role');
-            if (requiredRole === 'admin' && role !== 'admin') {
-                alert("🛑 ACCESS DENIED: Administrative clearance is required for this module.");
-                return;
-            }
-            if (url === '#') alert('Module currently in development.');
-            else window.location.href = url;
+            if (requiredRole === 'admin' && role !== 'admin') { alert("🛑 ACCESS DENIED: Administrative clearance is required."); return; }
+            if (url === '#') alert('Module is currently syncing with database...'); else window.location.href = url;
         }
 
-        // Canvas Engine
+        // Background Particles
         const canvas = document.getElementById('node-canvas'); const ctx = canvas.getContext('2d'); let width, height, particles = [];
         function initCanvas() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
         class Particle {
@@ -147,13 +135,11 @@
         function initParticles() { particles = []; let numNodes = Math.floor((width * height) / 15000); if(numNodes > 150) numNodes = 150; for (let i = 0; i < numNodes; i++) particles.push(new Particle()); }
         let mouse = { x: null, y: null }; window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; }); window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
         function animate() {
-            ctx.clearRect(0, 0, width, height);
-            particles.forEach(p => { p.update(); p.draw(); });
+            ctx.clearRect(0, 0, width, height); particles.forEach(p => { p.update(); p.draw(); });
             for (let i = 0; i < particles.length; i++) {
                 if (mouse.x != null) { let dxMouse = particles[i].x - mouse.x; let dyMouse = particles[i].y - mouse.y; let distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse); if (distMouse < 150) { ctx.beginPath(); ctx.strokeStyle = `rgba(59, 130, 246, ${1 - distMouse / 150})`; ctx.lineWidth = 1; ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); } }
                 for (let j = i; j < particles.length; j++) { let dx = particles[i].x - particles[j].x; let dy = particles[i].y - particles[j].y; let dist = Math.sqrt(dx * dx + dy * dy); if (dist < 120) { ctx.beginPath(); ctx.strokeStyle = `rgba(148, 163, 184, ${0.2 - dist / 120})`; ctx.lineWidth = 0.5; ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke(); } }
-            }
-            requestAnimationFrame(animate);
+            } requestAnimationFrame(animate);
         }
         window.addEventListener('resize', () => { initCanvas(); initParticles(); }); initCanvas(); initParticles(); animate();
     </script>
