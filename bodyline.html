@@ -572,7 +572,37 @@
             }
         }
         
-        async function sendComment() { const i = document.getElementById('chat-input'); if(i.value) { await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value, module: 'production' }]); i.value = ''; fetchComments(); } }
+      async function sendComment() { 
+            const i = document.getElementById('chat-input'); 
+            const msg = i.value.trim();
+            
+            if(msg) { 
+                // 1. INSTANT UI UPDATE (No waiting for the cloud)
+                const chatBox = document.getElementById('chat-box');
+                const isAdmin = currentUser.includes("Admin") || currentUser.includes("Engr.");
+                chatBox.innerHTML += `
+                    <div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">
+                        <button class="del-msg-btn">⏳</button> 
+                        <b>${currentUser}</b> <span>${msg}</span>
+                    </div>`;
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to bottom
+                i.value = ''; 
+
+                // 2. BACKGROUND CLOUD SAVE
+                const { error } = await sb.from('live_comments').insert([{ 
+                    user_name: currentUser, 
+                    message: msg, 
+                    module: 'production' 
+                }]); 
+                
+                // 3. SYNC CONFIRMATION
+                if(!error) {
+                    fetchComments(); 
+                } else {
+                    alert("Message failed to send. Check your connection.");
+                }
+            } 
+        }
         async function deleteComment(id) { if(confirm("Remove this message?")) { await sb.from('live_comments').delete().eq('id', id); fetchComments(); } }
 
         function saveNotes() { localStorage.setItem('bodyline_notes', document.getElementById('prod-notepad').value); }
