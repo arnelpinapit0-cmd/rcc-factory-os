@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v17.2 Advanced MES</title>
+    <title>RCC Bodyline OS | v18.0 Production Tracking</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -30,9 +30,7 @@
         .auth-card { background: var(--surface); padding: 50px; border-radius: 12px; border: 1px solid var(--border); width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .auth-card input { width: 100%; padding: 15px; background: var(--bg); border: 2px solid var(--border); color: var(--text); font-size: 24px; text-align: center; border-radius: 8px; margin: 25px 0; letter-spacing: 8px; outline: none; font-weight: bold; }
         .auth-card input:focus { border-color: var(--accent); }
-        .shake { animation: shakeError 0.4s forwards; border-color: var(--danger) !important; }
-        @keyframes shakeError { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
-
+        
         .cloud-status { position: fixed; top: 15px; left: 15px; font-size: 11px; display: flex; align-items: center; gap: 8px; background: var(--surface); padding: 8px 16px; border-radius: 20px; z-index: 5000; border: 1px solid var(--border); font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; }
         .dot-offline { background: var(--warning); }
@@ -51,13 +49,11 @@
 
         .main-content { padding: 20px; max-width: 1600px; margin: auto; }
         
-        /* THE TABS */
         .tabs { display: flex; gap: 10px; justify-content: center; margin: 10px 0 15px 0; flex-wrap: wrap;}
         .tab-btn { display: flex; align-items: center; gap: 8px; padding: 10px 25px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s;}
         .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
         .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); }
 
-        /* CUSTOM TIME MATRIX SLIDER */
         #custom-time-matrix { display: none; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px; background: var(--surface); padding: 15px; border: 1px solid var(--border); border-radius: 8px; animation: slideDown 0.3s ease-out; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .matrix-group { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 8px 15px; border-radius: 6px; border: 1px solid var(--border); }
@@ -76,12 +72,10 @@
         @media (max-width: 1100px) { .chart-row { grid-template-columns: 1fr; } }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
-        /* MULTI-MINUTE GRID STYLES */
         .admin-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
         .downtime-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; background: rgba(37, 99, 235, 0.05); border: 1px dashed var(--accent); border-radius: 8px; margin-bottom: 10px;}
         .downtime-grid div { display: flex; flex-direction: column; }
         @media (max-width: 900px) { .admin-form-grid { grid-template-columns: repeat(2, 1fr); } .downtime-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 500px) { .admin-form-grid, .downtime-grid { grid-template-columns: 1fr; } }
 
         input, select, textarea { width: 100%; padding: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; box-sizing: border-box; margin-bottom: 5px; font-family: inherit; font-size: 13px;}
         input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; }
@@ -101,7 +95,6 @@
         .chat-msg { padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); position: relative; }
         .chat-msg b { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; }
         .del-msg-btn { position: absolute; right: 5px; top: 5px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; }
-        .del-msg-btn:hover { color: var(--danger); }
 
         .fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: 0.3s; }
         .fab:hover { transform: rotate(90deg); }
@@ -111,30 +104,9 @@
 
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto;}
         .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
-        
-        .pm-card { background: var(--surface); border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;}
-        .pm-action-text { font-size: 12px; color: var(--warning); font-weight: bold; background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 6px; border-left: 3px solid var(--warning);}
-        .pm-ok-text { font-size: 12px; color: var(--success); font-weight: bold; }
-
-        @page { size: landscape; margin: 10mm; }
-        @media print { 
-            body { background: white; -webkit-print-color-adjust: exact; color-adjust: exact; font-size: 10px;} 
-            .fab, .cloud-status, .menu-overlay, #system-menu, .chat-panel, .admin-only, #admin-form-container, .tabs, #custom-time-matrix, #andon-banner { display: none !important; } 
-            .header-banner { border-bottom: 2px solid black; padding: 10px 0; margin-bottom: 15px; }
-            .user-profile { border: none; background: transparent; }
-            .main-content { padding: 0; max-width: 100%; }
-            .kpi-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-            .kpi-card { width: 16%; padding: 10px; box-shadow: none; border: 1px solid #ccc; }
-            .chart-row { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 15px; page-break-inside: avoid; }
-            .panel { width: 48%; box-shadow: none; border: 1px solid #ccc; padding: 10px; }
-            .panel div { height: 160px !important; } 
-            #log-table-container { display: none !important; }
-        }
     </style>
 </head>
 <body>
-
-    <div id="andon-banner">🚨 RCC ANDON ALERT: DOWNTIME EXCEEDS PARAMETERS. 🚨</div>
 
     <div class="cloud-status" id="cloud-status-box">
         <div id="cloud-dot" class="status-dot dot-offline"></div>
@@ -144,7 +116,7 @@
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
             <h2 style="margin:0 0 5px 0; font-weight: 800; font-size: 28px;">RCC BODYLINE OS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">ADVANCED MES v17.2</p>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">PRODUCTION TRACKING v18.0</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
             <button class="btn-guest" onclick="guestLogin()" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:10px; width:100%; border-radius:8px; cursor:pointer;">👀 VIEW AS GUEST</button>
@@ -214,18 +186,31 @@
             <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Night Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartNight"></canvas></div></div>
         </div>
 
-        <div class="chart-row">
-            <div class="panel" style="grid-column: span 2; width: 100%;"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim); text-align: center;">Shift Output Comparison</h3><div style="height: 120px;"><canvas id="shiftCompChart"></canvas></div></div>
-        </div>
-
         <div class="chart-row admin-only" id="admin-form-container">
             <div class="panel" id="admin-form" style="grid-column: span 2; border: 1px solid var(--accent); background: var(--bg);">
-                <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Advanced Data Acquisition Terminal</h3>
+                <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Data Acquisition Terminal</h3>
                 
                 <div class="admin-form-grid">
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">DATE</label><input type="date" id="f-date"></div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">SHIFT</label><select id="f-shift"><option>Day Shift</option><option>Night Shift</option></select></div>
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">LINE</label><select id="f-line"><option>Line 1</option><option>Line 2</option><option>Line 3</option><option>Line 4</option><option>Line 5</option><option>Line 6</option></select></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">MACHINE ASSET</label>
+                        <select id="f-line">
+                            <option>Line 1 / SOUCAN 640</option>
+                            <option>Line 1 / FREI-APC & YUAN-ROX OVEN</option>
+                            <option>Line 2 / CANMAN X-7</option>
+                            <option>Line 2 / FREI-EPC & YUAN-ROX OVEN</option>
+                            <option>Line 3 / SOUCAN 650</option>
+                            <option>Line 3 / FREI-CPC & YUAN-ROX OVEN</option>
+                            <option>Line 4 / FBB 5600 KM 13697</option>
+                            <option>Line 4 / FREI-EPC & FREI-PCA OVEN</option>
+                            <option>Line 5 / FBB 5600 KM 13640</option>
+                            <option>Line 5 / YUAN-ROX OVEN</option>
+                            <option>Line 6 / SOUCAN 650</option>
+                            <option>Line 6 / FREI-CPC & YUAN-ROX OVEN</option>
+                            <option>SLITTER / MAWAG</option>
+                            <option>SLITTER / S-B34</option>
+                        </select>
+                    </div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">RUN TIME (MIN)</label><input type="number" id="f-run" value="480"></div>
                     
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TARGET OUTPUT</label><input type="number" id="f-target" placeholder="0"></div>
@@ -251,7 +236,7 @@
                 <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Filtered Production Log</h3>
                 <div style="overflow-y:auto; height: 400px;">
                     <table id="log-table">
-                        <thead><tr><th>Date</th><th>Shift</th><th>Line</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Total Down</th><th class="admin-only">Action</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Shift</th><th>Asset</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Total Down</th><th class="admin-only">Action</th></tr></thead>
                         <tbody id="log-body"></tbody>
                     </table>
                 </div>
@@ -277,8 +262,6 @@
         <div class="admin-only" style="margin-top: 20px;">
             <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 10px;">Admin Tools</h4>
             <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="exportExcel()">🟩 EXCEL (CURRENT VIEW)</button>
-            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="window.print()">🖨️ PDF (CURRENT VIEW)</button>
-            <button class="btn" style="width:100%; margin-bottom:10px; background: var(--warning); color: white;" onclick="openPMModal()">🔧 PM SCHEDULER</button>
             <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateSmartReport()">📋 TIME-MATRIX REPORT</button>
         </div>
         
@@ -295,26 +278,18 @@
 
     <div id="report-modal" class="modal">
         <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">📋 EXECUTIVE TIME-MATRIX SUMMARY</h2>
-        <div id="report-content" class="modal-content-box">Analyzing specific timeframe...</div>
+        <div id="report-content" class="modal-content-box" style="white-space: pre-wrap;">Analyzing specific timeframe...</div>
         <button class="btn btn-primary" onclick="downloadReport()" style="margin-bottom: 10px;">💾 DOWNLOAD REPORT</button>
         <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE</button>
-    </div>
-
-    <div id="pm-modal" class="modal">
-        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">🔧 PRODUCTION TPM</h2>
-        <div id="pm-content" class="modal-content-box" style="padding:0; border:none;"></div>
-        <button class="btn" style="width:100%; margin-top: 10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE SCHEDULER</button>
     </div>
 
     <div id="edit-modal" class="modal">
         <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">✏️ EDIT PRODUCTION RECORD</h2>
         <input type="hidden" id="edit-id">
-        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
             <div><label style="font-size:10px; color:var(--text-dim);">TARGET</label><input type="number" id="edit-target"></div>
             <div><label style="font-size:10px; color:var(--text-dim);">ACTUAL</label><input type="number" id="edit-actual"></div>
         </div>
-        
         <label style="font-size:11px; font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">EDIT DOWNTIME (MINUTES)</label>
         <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
             <div><label style="font-size:9px;">MECH</label><input type="number" id="edit-mech"></div>
@@ -323,9 +298,7 @@
             <div><label style="font-size:9px;">QC</label><input type="number" id="edit-qc"></div>
             <div><label style="font-size:9px;">PACK</label><input type="number" id="edit-pack"></div>
         </div>
-        
         <textarea id="edit-comment" rows="2" placeholder="Update comments..."></textarea>
-        
         <div style="display:flex; gap:10px; margin-top:15px;">
             <button class="btn btn-primary" onclick="submitEdit()">💾 SAVE CHANGES</button>
             <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); width:100%;" onclick="closeModals()">CANCEL</button>
@@ -339,8 +312,10 @@
 
         let rawData = []; let filteredData = []; let previousData = [];
         let isEngineer = false; let currentUser = "GUEST"; let charts = {}; let currentMode = 'daily';
-        let pmData = JSON.parse(localStorage.getItem('rcc_bodyline_pm_dates')) || {};
-        const LINE_LIST = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6'];
+        
+        const LINE_LIST = [
+            'Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'
+        ];
 
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
@@ -359,7 +334,7 @@
         function triggerError(card) { document.getElementById('access-code').value = ''; card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 400); }
 
         function guestLogin() { 
-            let name = prompt("Enter your Name for Live Chat (Optional):"); currentUser = name || "Anonymous Viewer"; isEngineer = false; 
+            let name = prompt("Enter your Name for Live Chat:"); currentUser = name || "Anonymous Viewer"; isEngineer = false; 
             unlockSystem(); recordAccess(`Viewer: ${currentUser} Joined`);
         }
 
@@ -369,8 +344,9 @@
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = isEngineer ? 'block' : 'none');
             document.getElementById('portal-overlay').style.display = 'none';
             
-            initCharts(); fetchData(); fetchComments(); loadNotes();
+            initCharts(); fetchData(); fetchComments(); loadNotes(); fetchAccessLogs();
             setMode('daily', document.querySelector('.tab-btn')); 
+            setupRealtime();
         }
 
         async function recordAccess(msg) { await sb.from('access_logs').insert([{ user_name: msg }]); }
@@ -392,89 +368,56 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
             currentMode = mode;
-            
-            if(mode === 'custom') {
-                document.getElementById('custom-time-matrix').style.display = 'flex';
-                toggleCustomInputs(); 
-            } else {
-                document.getElementById('custom-time-matrix').style.display = 'none';
-                calculateDatesAndProcess();
-            }
+            if(mode === 'custom') { document.getElementById('custom-time-matrix').style.display = 'flex'; toggleCustomInputs(); } 
+            else { document.getElementById('custom-time-matrix').style.display = 'none'; calculateDatesAndProcess(); }
         }
 
         function toggleCustomInputs() {
             const subMode = document.getElementById('custom-mode').value;
-            ['range', 'week', 'month'].forEach(m => {
-                document.getElementById(`input-${m}`).style.display = (m === subMode) ? 'flex' : 'none';
-            });
+            ['range', 'week', 'month'].forEach(m => { document.getElementById(`input-${m}`).style.display = (m === subMode) ? 'flex' : 'none'; });
             processData(); 
         }
 
         function calculateDatesAndProcess() {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${yyyy}-${mm}-${dd}`;
+            const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`; let start, end, prevStart, prevEnd;
 
-            let start, end, prevStart, prevEnd;
-
-            if(currentMode === 'daily') {
-                start = end = todayStr;
-                let yest = new Date(today); yest.setDate(yest.getDate() - 1);
-                prevStart = prevEnd = yest.toISOString().split('T')[0];
-            } 
+            if(currentMode === 'daily') { start = end = todayStr; let yest = new Date(today); yest.setDate(yest.getDate() - 1); prevStart = prevEnd = yest.toISOString().split('T')[0]; } 
             else if(currentMode === 'weekly') {
-                let day = today.getDay();
-                let diff = today.getDate() - day + (day === 0 ? -6 : 1); 
-                let mon = new Date(today.setDate(diff));
-                let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                let day = today.getDay(); let diff = today.getDate() - day + (day === 0 ? -6 : 1); 
+                let mon = new Date(today.setDate(diff)); let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
                 start = mon.toISOString().split('T')[0]; end = sun.toISOString().split('T')[0];
-                
-                let pMon = new Date(mon); pMon.setDate(pMon.getDate() - 7);
-                let pSun = new Date(sun); pSun.setDate(pSun.getDate() - 7);
+                let pMon = new Date(mon); pMon.setDate(pMon.getDate() - 7); let pSun = new Date(sun); pSun.setDate(pSun.getDate() - 7);
                 prevStart = pMon.toISOString().split('T')[0]; prevEnd = pSun.toISOString().split('T')[0];
             }
             else if(currentMode === 'monthly') {
-                start = `${yyyy}-${mm}-01`;
-                let lastDay = new Date(yyyy, today.getMonth() + 1, 0); end = `${yyyy}-${mm}-${lastDay.getDate()}`;
-                let prevMonth = today.getMonth() === 0 ? 12 : today.getMonth();
-                let prevYear = today.getMonth() === 0 ? yyyy - 1 : yyyy;
+                start = `${yyyy}-${mm}-01`; let lastDay = new Date(yyyy, today.getMonth() + 1, 0); end = `${yyyy}-${mm}-${lastDay.getDate()}`;
+                let prevMonth = today.getMonth() === 0 ? 12 : today.getMonth(); let prevYear = today.getMonth() === 0 ? yyyy - 1 : yyyy;
                 let pmm = String(prevMonth).padStart(2, '0'); prevStart = `${prevYear}-${pmm}-01`;
                 let prevLastDay = new Date(prevYear, prevMonth, 0); prevEnd = `${prevYear}-${pmm}-${prevLastDay.getDate()}`;
             }
-            else if(currentMode === 'yearly') {
-                start = `${yyyy}-01-01`; end = `${yyyy}-12-31`;
-                prevStart = `${yyyy-1}-01-01`; prevEnd = `${yyyy-1}-12-31`;
-            }
-            
+            else if(currentMode === 'yearly') { start = `${yyyy}-01-01`; end = `${yyyy}-12-31`; prevStart = `${yyyy-1}-01-01`; prevEnd = `${yyyy-1}-12-31`; }
             filterAndRender(start, end, prevStart, prevEnd);
         }
 
         function processData() {
             if(currentMode !== 'custom') return; 
-            const subMode = document.getElementById('custom-mode').value;
-            let start, end;
-
+            const subMode = document.getElementById('custom-mode').value; let start, end;
             if (subMode === 'range') { start = document.getElementById('date-start').value; end = document.getElementById('date-end').value; } 
             else if (subMode === 'week') {
-                const weekVal = document.getElementById('date-week').value; 
-                if(!weekVal) return;
+                const weekVal = document.getElementById('date-week').value; if(!weekVal) return;
                 let [y, w] = weekVal.split('-W'); let simple = new Date(y, 0, 1 + (w - 1) * 7);
                 let day = simple.getDay(); let diff = simple.getDate() - day + (day === 0 ? -6 : 1); 
                 let mon = new Date(simple.setDate(diff)); let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
                 start = mon.toISOString().split('T')[0]; end = sun.toISOString().split('T')[0];
             } else if (subMode === 'month') {
-                const monVal = document.getElementById('date-month').value;
-                if(!monVal) return;
+                const monVal = document.getElementById('date-month').value; if(!monVal) return;
                 start = monVal + "-01"; let d = new Date(monVal.split('-')[0], monVal.split('-')[1], 0); end = monVal + "-" + d.getDate();
             }
             filterAndRender(start, end, start, end); 
         }
 
-        function getTotalDown(r) {
-            return (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0);
-        }
+        function getTotalDown(r) { return (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0); }
 
         function filterAndRender(start, end, pStart, pEnd) {
             filteredData = rawData.filter(r => r.date >= start && r.date <= end);
@@ -485,12 +428,9 @@
         function updateKPIs() {
             const calc = (data) => {
                 const t = data.reduce((acc, r) => { acc.a += r.actual; acc.t += r.target; acc.d += getTotalDown(r); return acc; }, {a:0, t:0, d:0});
-                const eff = t.t > 0 ? (t.a/t.t*100) : 0;
-                return { yield: t.a, target: t.t, down: t.d, eff };
+                const eff = t.t > 0 ? (t.a/t.t*100) : 0; return { yield: t.a, target: t.t, down: t.d, eff };
             };
-
-            const curr = calc(filteredData);
-            const prev = calc(previousData);
+            const curr = calc(filteredData); const prev = calc(previousData);
 
             document.getElementById('kpi-yield').innerText = curr.yield.toLocaleString();
             document.getElementById('kpi-target').innerText = curr.target.toLocaleString();
@@ -500,28 +440,20 @@
             const setVar = (id, c, p, isPct = false, reverse = false) => {
                 const el = document.getElementById(id);
                 if (currentMode === 'custom' || !p || p === 0) { el.innerText = "--"; el.className = "variance"; return; }
-                const diff = isPct ? (c - p) : ((c - p) / p * 100);
-                const sym = diff >= 0 ? "↑" : "↓";
+                const diff = isPct ? (c - p) : ((c - p) / p * 100); const sym = diff >= 0 ? "↑" : "↓";
                 el.innerText = `${sym} ${Math.abs(diff).toFixed(1)}${isPct?'':'%'}`;
-                let isGood = diff >= 0; if(reverse) isGood = diff <= 0; 
-                el.className = `variance ${isGood ? 'up' : 'down'}`;
+                let isGood = diff >= 0; if(reverse) isGood = diff <= 0; el.className = `variance ${isGood ? 'up' : 'down'}`;
             };
-
-            setVar('var-yield', curr.yield, prev.yield);
-            setVar('var-eff', curr.eff, prev.eff, true);
-            setVar('var-down', curr.down, prev.down, false, true); 
+            setVar('var-yield', curr.yield, prev.yield); setVar('var-eff', curr.eff, prev.eff, true); setVar('var-down', curr.down, prev.down, false, true); 
         }
 
         function renderTable() {
             document.getElementById('log-body').innerHTML = filteredData.map(r => `
                 <tr>
-                    <td>${r.date}</td><td>${r.shift[0]}</td><td><b>${r.line}</b></td><td>${r.actual}</td><td>${r.target}</td>
+                    <td>${r.date}</td><td>${r.shift[0]}</td><td style="font-size:10px;"><b>${r.line}</b></td><td>${r.actual}</td><td>${r.target}</td>
                     <td style="font-weight:bold; color:${(r.actual/r.target*100)<80 ? 'var(--danger)' : 'var(--success)'}">${(r.actual/r.target*100).toFixed(1)}%</td><td>${getTotalDown(r)}m</td>
                     <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}">
-                        <div class="action-cell">
-                            <button class="icon-btn" onclick="openEditModal(${r.id})">✏️</button>
-                            <button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button>
-                        </div>
+                        <div class="action-cell"><button class="icon-btn" onclick="openEditModal(${r.id})">✏️</button><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></div>
                     </td>
                 </tr>
             `).join('');
@@ -534,13 +466,9 @@
                 shift: document.getElementById('f-shift').value, line: document.getElementById('f-line').value,
                 target: parseInt(document.getElementById('f-target').value) || 0, actual: parseInt(document.getElementById('f-actual').value) || 0, 
                 run: parseInt(document.getElementById('f-run').value) || 480, 
-                down_mech: parseInt(document.getElementById('f-mech').value) || 0,
-                down_elec: parseInt(document.getElementById('f-elec').value) || 0,
-                down_mat: parseInt(document.getElementById('f-mat').value) || 0,
-                down_qc: parseInt(document.getElementById('f-qc').value) || 0,
-                down_pack: parseInt(document.getElementById('f-pack').value) || 0,
-                comment: document.getElementById('f-comment').value,
-                created_at: new Date().toISOString()
+                down_mech: parseInt(document.getElementById('f-mech').value) || 0, down_elec: parseInt(document.getElementById('f-elec').value) || 0,
+                down_mat: parseInt(document.getElementById('f-mat').value) || 0, down_qc: parseInt(document.getElementById('f-qc').value) || 0, down_pack: parseInt(document.getElementById('f-pack').value) || 0,
+                comment: document.getElementById('f-comment').value, created_at: new Date().toISOString()
             };
             if (entry.target === 0 || entry.actual === 0) { alert("Target and Actual required."); return; }
             btn.innerText = "UPLOADING...";
@@ -548,47 +476,25 @@
             if(!error) { 
                 await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ TRANSMIT RECORD"; }, 2000);
                 ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-comment'].forEach(id => document.getElementById(id).value = '');
-            } else { alert("DB Error: Did you run the SQL command in Supabase?"); btn.innerText = "☁️ TRANSMIT RECORD"; }
+            } else { alert("DB Error."); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
 
         function openEditModal(id) {
-            const log = rawData.find(r => r.id === id);
-            if(!log) return;
-            document.getElementById('edit-id').value = id;
-            document.getElementById('edit-target').value = log.target;
-            document.getElementById('edit-actual').value = log.actual;
-            document.getElementById('edit-mech').value = log.down_mech || 0;
-            document.getElementById('edit-elec').value = log.down_elec || 0;
-            document.getElementById('edit-mat').value = log.down_mat || 0;
-            document.getElementById('edit-qc').value = log.down_qc || 0;
-            document.getElementById('edit-pack').value = log.down_pack || 0;
-            document.getElementById('edit-comment').value = log.comment || '';
-            document.getElementById('edit-modal').style.display = 'block';
-            document.getElementById('main-overlay').style.display = 'block';
+            const log = rawData.find(r => r.id === id); if(!log) return;
+            document.getElementById('edit-id').value = id; document.getElementById('edit-target').value = log.target; document.getElementById('edit-actual').value = log.actual;
+            document.getElementById('edit-mech').value = log.down_mech || 0; document.getElementById('edit-elec').value = log.down_elec || 0; document.getElementById('edit-mat').value = log.down_mat || 0;
+            document.getElementById('edit-qc').value = log.down_qc || 0; document.getElementById('edit-pack').value = log.down_pack || 0; document.getElementById('edit-comment').value = log.comment || '';
+            document.getElementById('edit-modal').style.display = 'block'; document.getElementById('main-overlay').style.display = 'block';
         }
 
         async function submitEdit() {
             const id = document.getElementById('edit-id').value;
-            const updates = {
-                target: parseInt(document.getElementById('edit-target').value) || 0,
-                actual: parseInt(document.getElementById('edit-actual').value) || 0,
-                down_mech: parseInt(document.getElementById('edit-mech').value) || 0,
-                down_elec: parseInt(document.getElementById('edit-elec').value) || 0,
-                down_mat: parseInt(document.getElementById('edit-mat').value) || 0,
-                down_qc: parseInt(document.getElementById('edit-qc').value) || 0,
-                down_pack: parseInt(document.getElementById('edit-pack').value) || 0,
-                comment: document.getElementById('edit-comment').value
-            };
+            const updates = { target: parseInt(document.getElementById('edit-target').value)||0, actual: parseInt(document.getElementById('edit-actual').value)||0, down_mech: parseInt(document.getElementById('edit-mech').value)||0, down_elec: parseInt(document.getElementById('edit-elec').value)||0, down_mat: parseInt(document.getElementById('edit-mat').value)||0, down_qc: parseInt(document.getElementById('edit-qc').value)||0, down_pack: parseInt(document.getElementById('edit-pack').value)||0, comment: document.getElementById('edit-comment').value };
             const { error } = await sb.from('production_logs').update(updates).eq('id', id);
             if(!error) { closeModals(); await fetchData(); } else { alert("Failed to update."); }
         }
 
-        async function deleteLog(id) { 
-            if(confirm("PERMANENT ACTION: Delete this log?")) { 
-                const { error } = await sb.from('production_logs').delete().eq('id', id); 
-                if(!error) fetchData(); 
-            } 
-        }
+        async function deleteLog(id) { if(confirm("Delete this log?")) { await sb.from('production_logs').delete().eq('id', id); fetchData(); } }
 
         function initCharts() {
             const cleanScales = { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(100,116,139,0.1)' } } };
@@ -597,6 +503,7 @@
 
             charts.prod = new Chart(document.getElementById('prodChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Actual', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', fill: true, tension: 0.3, data: [] }, { label: 'Target', borderColor: '#94a3b8', borderDash:[4,4], data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'top', align: 'end' } }, scales: cleanScales } });
             charts.util = new Chart(document.getElementById('utilChart'), { type: 'doughnut', data: { labels: ['Mechanical', 'Electrical', 'Material', 'QC', 'Packer'], datasets: [{ data: [0,0,0,0,0], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b', '#10b981'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, cutout:'70%', plugins: { legend: { position: 'right' } } } });
+            
             charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: LINE_LIST, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
             charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: LINE_LIST, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
             charts.shiftComp = new Chart(document.getElementById('shiftCompChart'), { type: 'bar', data: { labels: ['Day Shift', 'Night Shift'], datasets: [{ label: 'Total Output', backgroundColor: ['#f59e0b', '#2563eb'], data: [0, 0], borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(100,116,139,0.1)' } }, y: { grid: { display: false } } } } });
@@ -604,49 +511,30 @@
 
         function updateCharts() {
             if(!charts.prod) return;
-            
             const labels = [...new Set(filteredData.map(r => r.date))].sort();
-            charts.prod.data.labels = labels;
-            charts.prod.data.datasets[0].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+r.actual,0));
-            charts.prod.data.datasets[1].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+r.target,0));
-            charts.prod.update();
+            charts.prod.data.labels = labels; charts.prod.data.datasets[0].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+r.actual,0)); charts.prod.data.datasets[1].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+r.target,0)); charts.prod.update();
 
             const reasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
-            filteredData.forEach(r => { 
-                reasons.Mechanical += (r.down_mech || 0);
-                reasons.Electrical += (r.down_elec || 0);
-                reasons.Material += (r.down_mat || 0);
-                reasons.QC += (r.down_qc || 0);
-                reasons.Packer += (r.down_pack || 0);
-            });
-            charts.util.data.datasets[0].data = Object.values(reasons);
-            charts.util.update();
+            filteredData.forEach(r => { reasons.Mechanical += (r.down_mech || 0); reasons.Electrical += (r.down_elec || 0); reasons.Material += (r.down_mat || 0); reasons.QC += (r.down_qc || 0); reasons.Packer += (r.down_pack || 0); });
+            charts.util.data.datasets[0].data = Object.values(reasons); charts.util.update();
 
             const updateShift = (chart, shift) => {
-                const vals = LINE_LIST.map(l => { 
-                    const rs = filteredData.filter(x => x.line === l && x.shift === shift); 
+                const vals = LINE_LIST.map(baseLine => { 
+                    const rs = filteredData.filter(x => x.line.startsWith(baseLine) && x.shift === shift); 
                     const a = rs.reduce((s,x)=>s+x.actual,0), t = rs.reduce((s,x)=>s+x.target,0); 
                     return t > 0 ? (a/t*100) : 0; 
                 });
-                chart.data.datasets[0].data = vals;
-                chart.data.datasets[0].backgroundColor = vals.map(e => e === 0 ? '#e2e8f0' : (e < 65 ? '#ef4444' : (e < 80 ? '#f59e0b' : '#10b981')));
-                chart.update();
+                chart.data.datasets[0].data = vals; chart.data.datasets[0].backgroundColor = vals.map(e => e === 0 ? '#e2e8f0' : (e < 65 ? '#ef4444' : (e < 80 ? '#f59e0b' : '#10b981'))); chart.update();
             }
             updateShift(charts.effDay, "Day Shift"); updateShift(charts.effNight, "Night Shift");
 
-            charts.shiftComp.data.datasets[0].data = [ 
-                filteredData.filter(r => r.shift === "Day Shift").reduce((s,r)=>s+r.actual,0), 
-                filteredData.filter(r => r.shift === "Night Shift").reduce((s,r)=>s+r.actual,0) 
-            ];
-            charts.shiftComp.update();
+            charts.shiftComp.data.datasets[0].data = [ filteredData.filter(r => r.shift === "Day Shift").reduce((s,r)=>s+r.actual,0), filteredData.filter(r => r.shift === "Night Shift").reduce((s,r)=>s+r.actual,0) ]; charts.shiftComp.update();
         }
 
         function generateSmartReport() {
             if(filteredData.length === 0) { alert("No data found for this timeframe."); return; }
             let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
-            const yield = filteredData.reduce((s,r)=>s+r.actual,0);
-            const target = filteredData.reduce((s,r)=>s+r.target,0);
-            const down = filteredData.reduce((s,r)=>s+getTotalDown(r),0);
+            const yield = filteredData.reduce((s,r)=>s+r.actual,0); const target = filteredData.reduce((s,r)=>s+r.target,0); const down = filteredData.reduce((s,r)=>s+getTotalDown(r),0);
             const eff = target > 0 ? (yield/target*100).toFixed(1) : 0;
 
             let text = `========================================\nRCC EXECUTIVE ${modeText} SUMMARY\n========================================\n\n`;
@@ -654,10 +542,8 @@
             
             let lines = {}; const reasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
             filteredData.forEach(r => { 
-                if(!lines[r.line]) lines[r.line] = {a:0, t:0};
-                lines[r.line].a += r.actual; lines[r.line].t += r.target; 
-                reasons.Mechanical += (r.down_mech || 0); reasons.Electrical += (r.down_elec || 0);
-                reasons.Material += (r.down_mat || 0); reasons.QC += (r.down_qc || 0); reasons.Packer += (r.down_pack || 0);
+                if(!lines[r.line]) lines[r.line] = {a:0, t:0}; lines[r.line].a += r.actual; lines[r.line].t += r.target; 
+                reasons.Mechanical += (r.down_mech || 0); reasons.Electrical += (r.down_elec || 0); reasons.Material += (r.down_mat || 0); reasons.QC += (r.down_qc || 0); reasons.Packer += (r.down_pack || 0);
             });
             
             let worst = Object.keys(lines).reduce((a,b) => (lines[a].a/lines[a].t) < (lines[b].a/lines[b].t) ? a : b);
@@ -666,51 +552,12 @@
             text += `[ ANALYSIS ]\n> The plant operated at ${eff}% efficiency for this selected period.\n`;
             if(worst) text += `> Underperforming Asset: ${worst} showed the lowest efficiency of ${(lines[worst].a/lines[worst].t*100).toFixed(1)}%.\n`;
             if(reasons[topReason] > 0) text += `> Primary Bottleneck: ${topReason} delays caused the majority of lost time (${reasons[topReason]} mins).\n`;
-            
             text += `\n[ RECOMMENDATION ]\n> Target the root cause of ${topReason} downtime on ${worst} to recover lost yield.\n`;
 
             document.getElementById('report-content').innerText = text;
-            document.getElementById('system-menu').classList.remove('active');
-            document.getElementById('main-overlay').style.display = 'block';
-            document.getElementById('report-modal').style.display = 'block';
+            document.getElementById('system-menu').classList.remove('active'); document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
         }
 
-        function exportExcel() {
-            if(filteredData.length === 0) return alert("No data to export.");
-            const wsData = filteredData.map(r => ({ "Date": r.date, "Shift": r.shift, "Line": r.line, "Actual": r.actual, "Target": r.target, "Eff %": (r.actual/r.target*100).toFixed(1), "Total Down (min)": getTotalDown(r), "Mech (m)": r.down_mech||0, "Elec (m)": r.down_elec||0, "Mat (m)": r.down_mat||0, "QC (m)": r.down_qc||0, "Pack (m)": r.down_pack||0, "Comment": r.comment }));
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Filtered Logs");
-            XLSX.writeFile(wb, `RCC_Filtered_Report.xlsx`);
-        }
-
-        function openPMModal() {
-            document.getElementById('system-menu').classList.remove('active');
-            document.getElementById('main-overlay').style.display = 'block';
-            document.getElementById('pm-modal').style.display = 'block';
-            
-            const contentBox = document.getElementById('pm-content');
-            let html = ""; const now = new Date();
-
-            LINE_LIST.forEach(line => {
-                if(!pmData[line]) { pmData[line] = now.toISOString(); localStorage.setItem('rcc_bodyline_pm_dates', JSON.stringify(pmData)); }
-                let diffDays = Math.floor((now - new Date(pmData[line])) / (1000 * 60 * 60 * 24));
-                
-                let req = "No Action Required"; let col = "var(--border)"; let tcol = "var(--text)"; let aClass = "pm-ok-text";
-                if(diffDays >= 180) { req = "SEMI-ANNUAL PM DUE"; col = "var(--danger)"; tcol = "white"; aClass = "pm-action-text"; }
-                else if(diffDays >= 90) { req = "QUARTERLY PM DUE"; col = "var(--warning)"; tcol = "white"; aClass = "pm-action-text"; }
-                else if(diffDays >= 30) { req = "MONTHLY PM DUE"; col = "var(--accent)"; tcol = "white"; aClass = "pm-action-text"; }
-
-                html += `<div class="pm-card"><div class="pm-header"><b style="color:var(--text);">${line}</b> <span style="font-size:10px; color:var(--text-dim);">Last PM: ${diffDays} days ago</span></div>
-                <div class="${aClass}">${req}</div>
-                <button class="btn" style="background:${col}; color:${tcol}; font-size:10px; padding:8px;" onclick="resetPMClock('${line}')">MARK COMPLETED</button></div>`;
-            });
-            contentBox.innerHTML = html;
-        }
-
-        function resetPMClock(line) {
-            if(confirm(`Reset PM clock for ${line}?`)) { pmData[line] = new Date().toISOString(); localStorage.setItem('rcc_bodyline_pm_dates', JSON.stringify(pmData)); openPMModal(); }
-        }
-
-        // CHAT PARTITION: PRODUCTION ONLY
         async function fetchComments() {
             const { data } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
             if(data) {
@@ -718,64 +565,36 @@
                     const isAdmin = c.user_name.includes("Admin") || c.user_name.includes("Engr.");
                     const canDelete = (c.user_name === currentUser) || isEngineer;
                     const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
-                    return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}"> 
-                        ${delBtn} <b>${c.user_name}</b> <span>${c.message}</span>
-                    </div>`;
+                    return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">${delBtn} <b>${c.user_name}</b> <span>${c.message}</span></div>`;
                 }).join('');
                 document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
             }
         }
         
-        async function sendComment() { 
-            const i = document.getElementById('chat-input'); 
-            if(i.value) { 
-                await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value, module: 'production' }]); 
-                i.value = ''; 
-                fetchComments(); 
-            } 
-        }
-
-        async function deleteComment(id) { 
-            if(confirm("Remove this message?")) { 
-                await sb.from('live_comments').delete().eq('id', id); 
-                fetchComments(); 
-            } 
-        }
+        async function sendComment() { const i = document.getElementById('chat-input'); if(i.value) { await sb.from('live_comments').insert([{ user_name: currentUser, message: i.value, module: 'production' }]); i.value = ''; fetchComments(); } }
+        async function deleteComment(id) { if(confirm("Remove this message?")) { await sb.from('live_comments').delete().eq('id', id); fetchComments(); } }
 
         function saveNotes() { localStorage.setItem('bodyline_notes', document.getElementById('prod-notepad').value); }
         function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
 
         async function fetchAccessLogs() {
-            const display = document.getElementById('access-log-display');
-            display.innerHTML = "<span style='color:var(--text-dim);'>Loading security logs...</span>";
-            
+            const display = document.getElementById('access-log-display'); display.innerHTML = "<span style='color:var(--text-dim);'>Loading security logs...</span>";
             const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
-            
-            if(error) { 
-                display.innerHTML = "<span style='color:var(--danger);'>Error connecting to database.</span>"; 
-                return; 
-            }
-            
-            if(data && data.length > 0) { 
-                display.innerHTML = data.map(l => `<div style="padding:5px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:9px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join('');
-            } else {
-                display.innerHTML = "<span style='color:var(--text-dim);'>No access logs found.</span>";
-            }
+            if(error) { display.innerHTML = "<span style='color:var(--danger);'>Error connecting to database.</span>"; return; }
+            if(data && data.length > 0) { display.innerHTML = data.map(l => `<div style="padding:5px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:9px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name}</b></div>`).join(''); } 
+            else { display.innerHTML = "<span style='color:var(--text-dim);'>No logs found.</span>"; }
         }
-        function toggleMenu() { 
-            document.getElementById('system-menu').classList.toggle('active'); 
-            document.getElementById('main-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; 
-            if(isEngineer && document.getElementById('system-menu').classList.contains('active')) fetchAccessLogs();
+
+        function exportExcel() {
+            if(filteredData.length === 0) return alert("No data to export.");
+            const wsData = filteredData.map(r => ({ "Date": r.date, "Shift": r.shift, "Asset": r.line, "Actual": r.actual, "Target": r.target, "Eff %": (r.actual/r.target*100).toFixed(1), "Total Down (min)": getTotalDown(r), "Mech (m)": r.down_mech||0, "Elec (m)": r.down_elec||0, "Mat (m)": r.down_mat||0, "QC (m)": r.down_qc||0, "Pack (m)": r.down_pack||0, "Comment": r.comment }));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Filtered Logs");
+            XLSX.writeFile(wb, `RCC_Filtered_Report.xlsx`);
         }
-        
+
+        function toggleMenu() { document.getElementById('system-menu').classList.toggle('active'); document.getElementById('main-overlay').style.display = document.getElementById('system-menu').classList.contains('active') ? 'block' : 'none'; }
         function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
-        
-        function toggleTheme() { 
-            document.body.classList.toggle('dark-mode'); 
-            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-            if(charts.prod){ Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'; Object.values(charts).forEach(c => c.update()); }
-        }
-        
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); if(charts.prod){ Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'; Object.values(charts).forEach(c => c.update()); } }
         function downloadReport() { const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([document.getElementById('report-content').innerText], { type: 'text/plain' })); a.download = `RCC_Summary.txt`; a.click(); }
         
         setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
