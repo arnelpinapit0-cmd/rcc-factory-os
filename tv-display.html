@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCC | Live Floor Leaderboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;800&display=swap');
+        
+        body { 
+            background: #020617; /* Deep black/blue for high contrast TV */
+            color: #ffffff; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            overflow: hidden; /* No scrolling on a TV */
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+        }
+
+        .header {
+            background: #0f172a;
+            border-bottom: 4px solid #3b82f6;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            letter-spacing: 4px;
+            color: #f8fafc;
+            text-transform: uppercase;
+        }
+
+        .header .clock {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            color: #3b82f6;
+        }
+
+        .main-stage {
+            flex: 1;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 60px;
+        }
+
+        .shift-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .shift-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .shift-name {
+            font-size: 54px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .shift-score {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 82px;
+            font-weight: 900;
+        }
+
+        .day-color { color: #f59e0b; } /* Amber for Day */
+        .night-color { color: #8b5cf6; } /* Indigo for Night */
+
+        .progress-track {
+            width: 100%;
+            height: 60px;
+            background: #1e293b;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+            border: 2px solid #334155;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 30px;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        .day-fill { background: linear-gradient(90deg, #d97706, #fbbf24); }
+        .night-fill { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
+
+        .leader-crown {
+            font-size: 40px;
+            animation: bounce 2s infinite;
+            display: none;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .footer-ticker {
+            background: #0f172a;
+            padding: 15px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-align: center;
+            border-top: 1px solid #334155;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🏭 RCC Shift Wars</h1>
+        <div class="clock" id="tv-clock">00:00:00</div>
+    </div>
+
+    <div class="main-stage">
+        <div class="shift-container">
+            <div class="shift-header">
+                <div class="shift-name day-color">☀️ Day Shift <span class="leader-crown" id="day-crown">👑</span></div>
+                <div class="shift-score day-color" id="day-score">0</div>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill day-fill" id="day-bar" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <div class="shift-container">
+            <div class="shift-header">
+                <div class="shift-name night-color">🌙 Night Shift <span class="leader-crown" id="night-crown">👑</span></div>
+                <div class="shift-score night-color" id="night-score">0</div>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill night-fill" id="night-bar" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-ticker" id="ticker">
+        LIVE DATA SYNCING • TOTAL DAILY YIELD: <span id="total-yield" style="color:white; font-weight:800;">0</span> CANS
+    </div>
+
+    <script>
+        const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3am5ic2x4ZHNzeXJpb2tjZHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDg1MDUsImV4cCI6MjA5MTIyNDUwNX0.sNFCBZoSwZS0b5eU6iBmLeTt5ru7dP8G2GYJ9hrxAFg";
+        const sb = supabase.createClient(SB_URL, SB_KEY);
+
+        async function fetchTVData() {
+            // 1. Get Today's Date
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            try {
+                // 2. Pull ONLY today's logs from Supabase
+                const { data, error } = await sb.from('production_logs').select('*').eq('date', todayStr);
+                
+                if (error) throw error;
+
+                let dayYield = 0;
+                let nightYield = 0;
+
+                // 3. Tally the scores
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        if (row.shift === "Day Shift") dayYield += (row.actual || 0);
+                        if (row.shift === "Night Shift") nightYield += (row.actual || 0);
+                    });
+                }
+
+                // 4. Update the Numbers
+                document.getElementById('day-score').innerText = dayYield.toLocaleString();
+                document.getElementById('night-score').innerText = nightYield.toLocaleString();
+                document.getElementById('total-yield').innerText = (dayYield + nightYield).toLocaleString();
+
+                // 5. Calculate the Race Bars (Max scale is dynamically based on whoever is winning + 20%)
+                let maxYield = Math.max(dayYield, nightYield);
+                let scaleTarget = maxYield > 0 ? maxYield * 1.2 : 1000; // Give the winner some breathing room on the bar
+
+                let dayPct = dayYield > 0 ? (dayYield / scaleTarget) * 100 : 0;
+                let nightPct = nightYield > 0 ? (nightYield / scaleTarget) * 100 : 0;
+
+                document.getElementById('day-bar').style.width = `${dayPct}%`;
+                document.getElementById('night-bar').style.width = `${nightPct}%`;
+
+                // 6. Crown the Leader
+                document.getElementById('day-crown').style.display = (dayYield > nightYield && dayYield > 0) ? 'inline-block' : 'none';
+                document.getElementById('night-crown').style.display = (nightYield > dayYield && nightYield > 0) ? 'inline-block' : 'none';
+
+            } catch (err) {
+                console.error("TV Dashboard Error:", err.message);
+            }
+        }
+
+        // Live Clock
+        setInterval(() => { 
+            const now = new Date();
+            document.getElementById('tv-clock').innerText = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute:'2-digit', second:'2-digit' }); 
+        }, 1000);
+
+        // Fetch data immediately, then poll every 5 seconds for a pulsing live feel
+        fetchTVData();
+        setInterval(fetchTVData, 5000);
+
+    </script>
+</body>
+</html>
