@@ -11,7 +11,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
         :root { --bg: #0f172a; --surface: #1e293b; --accent: #8b5cf6; --text: #f8fafc; --text-dim: #94a3b8; --border: #334155; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; display: none; } /* HIDDEN UNTIL AUTH CHECKED */
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; display: none; } 
 
         .header-banner { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 15px 30px; background: var(--surface); border-bottom: 1px solid var(--border); }
         .header-spacer { grid-column: 1; } 
@@ -96,7 +96,7 @@
 
         <div class="panel">
             <h3 style="margin:0; color:var(--text); font-size: 14px; text-transform: uppercase;">📅 Preventive Maintenance Status Matrix</h3>
-            <p style="margin:5px 0 0 0; font-size:11px; color:var(--text-dim);">Tracks if an official PM checklist has been completed for each asset within the current calendar month.</p>
+            <p style="margin:5px 0 0 0; font-size:11px; color:var(--text-dim);">Tracks if an official PM checklist has been completed for each production line this month.</p>
             <div class="pm-matrix" id="pm-grid">
                 </div>
         </div>
@@ -109,14 +109,20 @@
                 <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">SHIFT</label><select id="f-shift"><option>Day Shift</option><option>Night Shift</option></select></div>
                 <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">MACHINE ASSET</label>
                     <select id="f-asset" onchange="generatePMChecklist()">
-                        <option>SOUCAN 640</option>
-                        <option>CANMAN X-7</option>
-                        <option>SOUCAN 650</option>
-                        <option>FBB 5600 (KM 13697 / 13640)</option>
-                        <option>FREI POWDER SYS</option>
-                        <option>YUAN-ROX OVEN</option>
-                        <option>FREI-PCA OVEN</option>
-                        <option>SLITTER (MAWAG & S-B34)</option>
+                        <option>Line 1 / SOUCAN 640</option>
+                        <option>Line 1 / FREI-APC & YUAN-ROX OVEN</option>
+                        <option>Line 2 / CANMAN X-7</option>
+                        <option>Line 2 / FREI-EPC & YUAN-ROX OVEN</option>
+                        <option>Line 3 / SOUCAN 650</option>
+                        <option>Line 3 / FREI-CPC & YUAN-ROX OVEN</option>
+                        <option>Line 4 / FBB 5600 KM 13697</option>
+                        <option>Line 4 / FREI-EPC & FREI-PCA OVEN</option>
+                        <option>Line 5 / FBB 5600 KM 13640</option>
+                        <option>Line 5 / YUAN-ROX OVEN</option>
+                        <option>Line 6 / SOUCAN 650</option>
+                        <option>Line 6 / FREI-CPC & YUAN-ROX OVEN</option>
+                        <option>SLITTER / MAWAG</option>
+                        <option>SLITTER / S-B34</option>
                     </select>
                 </div>
             </div>
@@ -188,71 +194,133 @@
         let rawData = [];
 
         // =========================================================================
-        // 💾 EXCEL SPREADSHEET DATA ENGINE (Hard-coded from your uploads)
+        // 💾 EXCEL SPREADSHEET DATA ENGINE (Mapped to original Asset names!)
         // =========================================================================
         const excelPMTasks = {
-          "SOUCAN 640": [
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Clean and check cooling water inlet filter.",
+          "Line 1 / SOUCAN 640": [
             "Record the piece counter and hour meter reading.",
-            "Remove calibrating tool 65 dia. @ tool post, clean and check rotation. Replace ball bearing if necessary.",
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Remove calibrating tool 65 dia., clean and check rotation. Replace ball bearing if necessary.",
             "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
             "Clean and check Conveyor and rounding rolls, Double sheet flap.",
             "Change oil of ATLAS COPCO vacuum pump.",
+            "Clean and check cooling water inlet filter.",
             "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
           ],
-          "CANMAN X-7": [
+          "Line 1 / FREI-APC & YUAN-ROX OVEN": [
+            "[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.",
+            "[OVEN] Check conveyor rollers ball bearing.",
+            "[OVEN] Check water level of water chiller & add water if required.",
+            "[OVEN] Dismantle, clean air & gas hose for each burner. Blow clogged burner element.",
+            "[OVEN] Cleaning of conveying system and heating elements."
+          ],
+          "Line 2 / CANMAN X-7": [
+            "Record the piece counter and hour meter reading.",
             "Redress upper/lower welding rollers, reset up and testing.",
             "Remove and clean FREI ORC, lacquer container.",
             "Check and clean lacquer spray system including filter and ventilator.",
             "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Record the piece counter and hour meter reading.",
-            "Remove calibrating tool 52 dia. @ tool post, clean and check roller rotation.",
+            "Remove calibrating tool 52 dia., clean and check roller rotation.",
             "Clean and check Conveyor and rounding rolls.",
             "Clean and check cooling water inlet filter.",
             "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
           ],
-          "SOUCAN 650": [
+          "Line 2 / FREI-EPC & YUAN-ROX OVEN": [
+            "[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.",
+            "[FREI] Check and clean filter discs for soiling.",
+            "[OVEN] Check conveyor rollers ball bearing.",
+            "[OVEN] Check water level of water chiller & add water if required.",
+            "[OVEN] Cleaning of conveying system and heating elements."
+          ],
+          "Line 3 / SOUCAN 650": [
+            "Record the piece counter and hour meter reading.",
             "Redress upper/lower welding rollers, reset up and testing.",
             "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
             "Remove and clean FREI ORC, lacquer container.",
             "Check and clean lacquer spray system including filter and ventilator.",
             "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
             "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Record the piece counter and hour meter reading.",
-            "Remove calibrating tool 52 dia. @ tool post, clean and check roller rotation.",
+            "Remove calibrating tool 52 dia., clean and check roller rotation.",
             "Change oil of GARDNER vacuum pump.",
-            "Clean and check cooling water inlet filter."
+            "Clean and check cooling water inlet filter.",
+            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
           ],
-          "FBB 5600 (KM 13697 / 13640)": [
+          "Line 3 / FREI-CPC & YUAN-ROX OVEN": [
+            "[FREI] Check and clean container #1, #2 and #3 of filter cartridges.",
+            "[FREI] Check and clean filter discs for soiling.",
+            "[OVEN] Check conveyor rollers ball bearing.",
+            "[OVEN] Check water level of water chiller & add water if required.",
+            "[OVEN] Cleaning of conveying system and heating elements."
+          ],
+          "Line 4 / FBB 5600 KM 13697": [
+            "Record the piece counter and hour meter reading.",
             "Redress upper/lower welding rollers, reset up and testing.",
             "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
             "Remove and clean FREI ORC, lacquer container.",
             "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
             "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Record the piece counter and hour meter reading.",
-            "Remove calibrating tool 52 dia. @ tool post, clean and check roller rotation.",
+            "Remove calibrating tool 52 dia., clean and check roller rotation.",
             "Change oil of GARDNER vacuum pump.",
-            "Clean and check cooling water inlet filter."
+            "Clean and check cooling water inlet filter.",
+            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
           ],
-          "FREI POWDER SYS": [
-            "Check and clean container #1, #2, #3, and #4 of filter cartridges.",
-            "Check and clean filter discs for soiling."
+          "Line 4 / FREI-EPC & FREI-PCA OVEN": [
+            "[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.",
+            "[FREI] Check and clean filter discs for soiling.",
+            "[OVEN] Check turning unit of main drive. Check oil leak, replace seal if necessary.",
+            "[OVEN] Remove and clean oven filter using air pressure.",
+            "[OVEN] Dismantle, clean air & gas hose for each burner. Blow clogged burner."
           ],
-          "YUAN-ROX OVEN": [
+          "Line 5 / FBB 5600 KM 13640": [
+            "Record the piece counter and hour meter reading.",
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Check and clean lacquer spray system including filter and ventilator.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
+            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
+            "Change oil of ATLAS COPCO vacuum pump.",
+            "Remove calibrating tool 52 dia., clean and check roller rotation.",
+            "Clean and check cooling water inlet filter.",
+            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
+          ],
+          "Line 5 / YUAN-ROX OVEN": [
             "Check conveyor rollers ball bearing.",
             "Check water level of water chiller & add water if required.",
-            "Dismantle, clean air & gas hose for each burner. High pressure air to blow clogged burner.",
             "Cleaning of conveying system and heating elements."
           ],
-          "FREI-PCA OVEN": [
-            "Check turning unit of main drive. Check oil leak, replace defective oil seal if necessary.",
-            "Remove and clean oven filter using air pressure.",
-            "Dismantle, clean air & gas hose for each burner. High pressure air to blow clogged burner."
+          "Line 6 / SOUCAN 650": [
+            "Record the piece counter and hour meter reading.",
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Check and clean lacquer spray system including filter and ventilator.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
+            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
+            "Remove calibrating tool 52 dia., clean and check roller rotation.",
+            "Change oil of GARDNER vacuum pump.",
+            "Clean and check cooling water inlet filter.",
+            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
           ],
-          "SLITTER (MAWAG & S-B34)": [
+          "Line 6 / FREI-CPC & YUAN-ROX OVEN": [
+            "[FREI] Check and clean container #1, #2 and #3 of filter cartridges.",
+            "[FREI] Check and clean filter discs for soiling.",
+            "[OVEN] Check conveyor rollers ball bearing.",
+            "[OVEN] Check water level of water chiller & add water if required.",
+            "[OVEN] Cleaning of conveying system and heating elements."
+          ],
+          "SLITTER / MAWAG": [
+            "Clean and check air service unit.",
+            "Check for air leaks on pneumatic cylinders and solenoid valve.",
+            "Check oil level of all gear box drives refill if needed.",
+            "Check chain tension, clean & apply grease.",
+            "Check for wear and tear of chain conveyor, chain dogs and sprocket.",
+            "Clean oil guide shaft insertion unit on 1st and 2nd operation table.",
+            "Check chain, belt tension and clean as needed."
+          ],
+          "SLITTER / S-B34": [
             "Clean and check air service unit.",
             "Check for air leaks on pneumatic cylinders and solenoid valve.",
             "Check oil level of all gear box drives refill if needed.",
@@ -272,7 +340,7 @@
             if (cat === "Preventive Maintenance (PM)") {
                 pmContainer.style.display = 'block';
                 regularFields.style.display = 'none';
-                generatePMChecklist();
+                generatePMChecklist(); // Render checklist immediately when toggled
             } else {
                 pmContainer.style.display = 'none';
                 regularFields.style.display = 'grid';
@@ -285,7 +353,7 @@
             const tasks = excelPMTasks[asset] || [];
             
             if (tasks.length === 0) {
-                listDiv.innerHTML = `<span style="font-size:11px; color:var(--warning);">No specific PM tasks found for this asset in the Excel database. Proceed with standard manual inspection.</span>`;
+                listDiv.innerHTML = `<span style="font-size:11px; color:var(--warning);">No specific PM tasks found for this asset. Proceed with standard manual inspection.</span>`;
                 return;
             }
             
@@ -297,7 +365,7 @@
             `).join('');
         }
 
-        // --- BULLETPROOF SECURITY ROUTING ---
+        // --- SECURITY ROUTING ---
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
             let activeEmail = session ? session.user.email : localStorage.getItem('rcc_user');
@@ -326,12 +394,12 @@
         }
 
         function processData() {
-            // Check PM compliance specifically for the current month
+            // Filter to current month for accurate PM tracking
             const today = new Date();
             const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const thisMonthData = rawData.filter(r => r.date.startsWith(currentMonth));
 
-            // KPI Logic
+            // KPI Updates
             document.getElementById('kpi-tickets').innerText = rawData.filter(r => !r.category.includes('Preventive')).length;
             document.getElementById('kpi-mins').innerText = thisMonthData.reduce((s,r) => s + (r.time_lost||0), 0);
             document.getElementById('kpi-open').innerText = rawData.filter(r => r.status === 'Open').length;
@@ -352,10 +420,11 @@
                 </tr>`;
             }).join('');
 
-            // Render The Dynamic PM Status Matrix
-            const plantLines = Object.keys(excelPMTasks);
+            // Render PM Matrix Grid (Checking if ANY asset starting with "Line X" had a PM)
+            const plantLines = ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5", "Line 6", "Slitter"];
             const matrixHTML = plantLines.map(lineName => {
-                const hasPM = thisMonthData.some(r => r.asset === lineName && r.category.includes('Preventive'));
+                // If a log's asset name includes "Line 1" or "SLITTER" AND is a PM log
+                const hasPM = thisMonthData.some(r => r.asset.toLowerCase().includes(lineName.toLowerCase()) && r.category.includes('Preventive'));
                 
                 if(hasPM) {
                     return `<div class="pm-card pm-done"><h4>${lineName}</h4><span>✅ PM Done</span></div>`;
