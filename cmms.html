@@ -34,10 +34,10 @@
 
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;}
         
-        /* NEW: PM MATRIX GRID */
-        .pm-matrix { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
-        .pm-card { padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border); background: var(--bg); transition: 0.3s; }
-        .pm-card h4 { margin: 0 0 5px 0; font-size: 14px; font-weight: 800; }
+        /* PM MATRIX GRID */
+        .pm-matrix { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
+        .pm-card { padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border); background: var(--bg); transition: 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 60px;}
+        .pm-card h4 { margin: 0 0 5px 0; font-size: 13px; font-weight: 800; text-transform: uppercase;}
         .pm-card span { font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; }
         .pm-due { border-color: var(--warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.1); }
         .pm-due span { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
@@ -55,13 +55,19 @@
         .btn-back:hover { color: var(--text); border-color: var(--text); }
 
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { text-align: left; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-dim); text-transform: uppercase; background: var(--surface);}
+        th { text-align: left; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-dim); text-transform: uppercase; background: var(--surface); position: sticky; top:0; z-index: 2;}
         td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
         
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
         .status-open { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
         .status-progress { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
         .status-closed { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        /* DIGITAL CHECKLIST UI */
+        .pm-task-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: 0.2s; margin-bottom: 6px;}
+        .pm-task-item:hover { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
+        .pm-task-item input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--success); cursor: pointer; flex-shrink: 0;}
+        .pm-task-item label { font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -82,49 +88,49 @@
 
     <div class="main-content">
         <div class="kpi-grid">
-            <div class="kpi-card"><small>⚠️ Total Breakdowns logged</small><div id="kpi-tickets" class="val">0</div></div>
+            <div class="kpi-card"><small>⚠️ Breakdown Tickets</small><div id="kpi-tickets" class="val">0</div></div>
             <div class="kpi-card"><small>⏱️ Downtime Mins (This Month)</small><div id="kpi-mins" class="val" style="color:var(--danger)">0</div></div>
             <div class="kpi-card"><small>🚨 Active Open Tickets</small><div id="kpi-open" class="val" style="color:var(--warning)">0</div></div>
-            <div class="kpi-card"><small>✅ PMs Completed (This Month)</small><div id="kpi-pms" class="val" style="color:var(--success)">0</div></div>
+            <div class="kpi-card"><small>✅ PMs Executed (This Month)</small><div id="kpi-pms" class="val" style="color:var(--success)">0</div></div>
         </div>
 
         <div class="panel">
-            <h3 style="margin:0; color:var(--text); font-size: 14px; text-transform: uppercase;">📅 Preventive Maintenance (PM) Status by Line</h3>
-            <p style="margin:5px 0 0 0; font-size:11px; color:var(--text-dim);">Tracks if a PM has been logged for each line within the current month.</p>
+            <h3 style="margin:0; color:var(--text); font-size: 14px; text-transform: uppercase;">📅 Preventive Maintenance Status Matrix</h3>
+            <p style="margin:5px 0 0 0; font-size:11px; color:var(--text-dim);">Tracks if an official PM checklist has been completed for each asset within the current calendar month.</p>
             <div class="pm-matrix" id="pm-grid">
                 </div>
         </div>
 
         <div class="panel" style="border: 1px solid var(--accent);">
-            <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">🛠️ Log a PM or Breakdown Ticket</h3>
+            <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">🛠️ Log a Breakdown Ticket or Execute PM</h3>
             
             <div class="admin-form-grid">
                 <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">DATE</label><input type="date" id="f-date"></div>
                 <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">SHIFT</label><select id="f-shift"><option>Day Shift</option><option>Night Shift</option></select></div>
-                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">MACHINE LINE / ASSET</label>
-                    <select id="f-asset">
-                        <option>Line 1</option>
-                        <option>Line 2</option>
-                        <option>Line 3</option>
-                        <option>Line 4</option>
-                        <option>Line 5</option>
-                        <option>Line 6</option>
-                        <option>Slitter</option>
-                        <option>Chiller / Compressor</option>
+                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">MACHINE ASSET</label>
+                    <select id="f-asset" onchange="generatePMChecklist()">
+                        <option>SOUCAN 640</option>
+                        <option>CANMAN X-7</option>
+                        <option>SOUCAN 650</option>
+                        <option>FBB 5600 (KM 13697 / 13640)</option>
+                        <option>FREI POWDER SYS</option>
+                        <option>YUAN-ROX OVEN</option>
+                        <option>FREI-PCA OVEN</option>
+                        <option>SLITTER (MAWAG & S-B34)</option>
                     </select>
                 </div>
             </div>
 
             <div class="admin-form-grid">
                 <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">WORK CATEGORY</label>
-                    <select id="f-category">
-                        <option>Preventive Maintenance (PM)</option>
+                    <select id="f-category" onchange="togglePMMode()">
                         <option>Mechanical Breakdown</option>
                         <option>Electrical Fault</option>
+                        <option>Preventive Maintenance (PM)</option>
                         <option>Tooling / Setup Change</option>
                     </select>
                 </div>
-                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TIME TAKEN / LOST (MINS)</label><input type="number" id="f-time" placeholder="0"></div>
+                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TOTAL TIME TAKEN / LOST (MINS)</label><input type="number" id="f-time" placeholder="0"></div>
                 <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TICKET STATUS</label>
                     <select id="f-status">
                         <option value="Completed">✅ Completed / Fixed</option>
@@ -134,19 +140,34 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom:15px;">
-                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">PARTS REPLACED (IF ANY)</label><input type="text" id="f-parts" placeholder="e.g. Bearings, Oil, Sensor..."></div>
-                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">ACTION TAKEN / DIAGNOSIS</label><input type="text" id="f-action" placeholder="Describe the PM procedure or repair performed..."></div>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom:15px;" id="regular-fields">
+                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">PARTS REPLACED / GREASE ADDED</label><input type="text" id="f-parts" placeholder="e.g. Copper wire, Bearings, Oil..."></div>
+                <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">ACTION TAKEN / DIAGNOSIS</label><input type="text" id="f-action" placeholder="Describe the repair performed..."></div>
             </div>
 
-            <button class="btn btn-primary" onclick="saveCMMSData()">💾 SAVE TO MAINTENANCE LOG</button>
+            <div id="pm-checklist-container" style="display:none; margin-top: 10px; margin-bottom:15px; padding: 20px; background: rgba(16, 185, 129, 0.03); border: 1px solid var(--success); border-radius: 8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <h4 style="margin: 0; color: var(--success); font-size: 13px; text-transform: uppercase;">📋 Digital Preventive Maintenance Checklist</h4>
+                    <span style="font-size:10px; color:var(--success); background: rgba(16, 185, 129, 0.2); padding: 3px 8px; border-radius:12px; font-weight:bold;">AUTO-SYNCED FROM EXCEL</span>
+                </div>
+                
+                <div id="pm-tasks-list" style="margin-bottom: 20px; display: flex; flex-direction: column; max-height: 250px; overflow-y: auto; padding-right: 5px;">
+                    </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 15px;">
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">🛢️ GREASE / OIL REFILL DETAIL</label><input type="text" id="f-pm-oil" placeholder="What oil/grease was added? (e.g. Multi-lube 100)"></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">⚙️ WEAR & TEAR REPLACEMENTS</label><input type="text" id="f-pm-parts" placeholder="List replaced wear parts (e.g. ball bearing, seal)"></div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveCMMSData()" id="save-btn">💾 SAVE TICKET TO MAINTENANCE LOG</button>
         </div>
 
         <div class="panel">
-            <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ CMMS History Log</h3>
+            <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Central CMMS History Log</h3>
             <div style="overflow-y:auto; height: 350px;">
                 <table id="log-table">
-                    <thead><tr><th>Date</th><th>Asset Line</th><th>Category</th><th>Time (Mins)</th><th>Action Taken</th><th>Parts</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Asset Line</th><th>Category</th><th>Time (Mins)</th><th>Action Taken</th><th>Parts / Oil</th><th>Status</th></tr></thead>
                     <tbody id="log-body"></tbody>
                 </table>
             </div>
@@ -166,7 +187,117 @@
 
         let rawData = [];
 
-        // --- BULLETPROOF ADMIN ROUTING ---
+        // =========================================================================
+        // 💾 EXCEL SPREADSHEET DATA ENGINE (Hard-coded from your uploads)
+        // =========================================================================
+        const excelPMTasks = {
+          "SOUCAN 640": [
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Clean and check cooling water inlet filter.",
+            "Record the piece counter and hour meter reading.",
+            "Remove calibrating tool 65 dia. @ tool post, clean and check rotation. Replace ball bearing if necessary.",
+            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
+            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
+            "Change oil of ATLAS COPCO vacuum pump.",
+            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
+          ],
+          "CANMAN X-7": [
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Check and clean lacquer spray system including filter and ventilator.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
+            "Record the piece counter and hour meter reading.",
+            "Remove calibrating tool 52 dia. @ tool post, clean and check roller rotation.",
+            "Clean and check Conveyor and rounding rolls.",
+            "Clean and check cooling water inlet filter.",
+            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
+          ],
+          "SOUCAN 650": [
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Check and clean lacquer spray system including filter and ventilator.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
+            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
+            "Record the piece counter and hour meter reading.",
+            "Remove calibrating tool 52 dia. @ tool post, clean and check roller rotation.",
+            "Change oil of GARDNER vacuum pump.",
+            "Clean and check cooling water inlet filter."
+          ],
+          "FBB 5600 (KM 13697 / 13640)": [
+            "Redress upper/lower welding rollers, reset up and testing.",
+            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
+            "Remove and clean FREI ORC, lacquer container.",
+            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
+            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
+            "Record the piece counter and hour meter reading.",
+            "Remove calibrating tool 52 dia. @ tool post, clean and check roller rotation.",
+            "Change oil of GARDNER vacuum pump.",
+            "Clean and check cooling water inlet filter."
+          ],
+          "FREI POWDER SYS": [
+            "Check and clean container #1, #2, #3, and #4 of filter cartridges.",
+            "Check and clean filter discs for soiling."
+          ],
+          "YUAN-ROX OVEN": [
+            "Check conveyor rollers ball bearing.",
+            "Check water level of water chiller & add water if required.",
+            "Dismantle, clean air & gas hose for each burner. High pressure air to blow clogged burner.",
+            "Cleaning of conveying system and heating elements."
+          ],
+          "FREI-PCA OVEN": [
+            "Check turning unit of main drive. Check oil leak, replace defective oil seal if necessary.",
+            "Remove and clean oven filter using air pressure.",
+            "Dismantle, clean air & gas hose for each burner. High pressure air to blow clogged burner."
+          ],
+          "SLITTER (MAWAG & S-B34)": [
+            "Clean and check air service unit.",
+            "Check for air leaks on pneumatic cylinders and solenoid valve.",
+            "Check oil level of all gear box drives refill if needed.",
+            "Check chain tension, clean & apply grease.",
+            "Check for wear and tear of chain conveyor, chain dogs and sprocket.",
+            "Clean oil guide shaft insertion unit on 1st and 2nd operation table.",
+            "Check chain, belt tension and clean as needed."
+          ]
+        };
+
+        // --- UI INTERACTION ENGINE ---
+        function togglePMMode() {
+            const cat = document.getElementById('f-category').value;
+            const pmContainer = document.getElementById('pm-checklist-container');
+            const regularFields = document.getElementById('regular-fields');
+            
+            if (cat === "Preventive Maintenance (PM)") {
+                pmContainer.style.display = 'block';
+                regularFields.style.display = 'none';
+                generatePMChecklist();
+            } else {
+                pmContainer.style.display = 'none';
+                regularFields.style.display = 'grid';
+            }
+        }
+
+        function generatePMChecklist() {
+            const asset = document.getElementById('f-asset').value;
+            const listDiv = document.getElementById('pm-tasks-list');
+            const tasks = excelPMTasks[asset] || [];
+            
+            if (tasks.length === 0) {
+                listDiv.innerHTML = `<span style="font-size:11px; color:var(--warning);">No specific PM tasks found for this asset in the Excel database. Proceed with standard manual inspection.</span>`;
+                return;
+            }
+            
+            listDiv.innerHTML = tasks.map((task, index) => `
+                <div class="pm-task-item" onclick="document.getElementById('pm-task-${index}').click()">
+                    <input type="checkbox" id="pm-task-${index}" value="${task}" onclick="event.stopPropagation()">
+                    <label for="pm-task-${index}" onclick="event.stopPropagation()">${task}</label>
+                </div>
+            `).join('');
+        }
+
+        // --- BULLETPROOF SECURITY ROUTING ---
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
             let activeEmail = session ? session.user.email : localStorage.getItem('rcc_user');
@@ -187,23 +318,20 @@
             }
         }
 
-        // --- DATA FETCHING & RENDERING ---
+        // --- DATABASE DATA LOGIC ---
         async function fetchCMMSData() { 
             const { data, error } = await sb.from('cmms_logs').select('*').order('date', {ascending:false}); 
-            if(error) {
-                console.error("Missing table error. Ensure you ran the SQL to create cmms_logs.");
-                return;
-            }
+            if(error) { console.error("Database Error:", error.message); return; }
             if(data) { rawData = data; processData(); } 
         }
 
         function processData() {
-            // Filter to current month for accurate PM tracking
+            // Check PM compliance specifically for the current month
             const today = new Date();
             const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const thisMonthData = rawData.filter(r => r.date.startsWith(currentMonth));
 
-            // KPI Updates
+            // KPI Logic
             document.getElementById('kpi-tickets').innerText = rawData.filter(r => !r.category.includes('Preventive')).length;
             document.getElementById('kpi-mins').innerText = thisMonthData.reduce((s,r) => s + (r.time_lost||0), 0);
             document.getElementById('kpi-open').innerText = rawData.filter(r => r.status === 'Open').length;
@@ -224,14 +352,13 @@
                 </tr>`;
             }).join('');
 
-            // Render PM Matrix Grid
-            const plantLines = ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5", "Line 6", "Slitter"];
+            // Render The Dynamic PM Status Matrix
+            const plantLines = Object.keys(excelPMTasks);
             const matrixHTML = plantLines.map(lineName => {
-                // Check if this specific line has a "Preventive Maintenance" log THIS month
                 const hasPM = thisMonthData.some(r => r.asset === lineName && r.category.includes('Preventive'));
                 
                 if(hasPM) {
-                    return `<div class="pm-card pm-done"><h4>${lineName}</h4><span>✅ PM Up to date</span></div>`;
+                    return `<div class="pm-card pm-done"><h4>${lineName}</h4><span>✅ PM Done</span></div>`;
                 } else {
                     return `<div class="pm-card pm-due"><h4>${lineName}</h4><span>⚠️ PM Due</span></div>`;
                 }
@@ -241,29 +368,62 @@
         }
 
         async function saveCMMSData() {
+            const btn = document.getElementById('save-btn');
+            const cat = document.getElementById('f-category').value;
+            
+            let finalParts = "";
+            let finalAction = "";
+
+            // If it's a PM, calculate checkboxes and grab the special Oil/Parts inputs
+            if (cat === "Preventive Maintenance (PM)") {
+                const checkboxes = document.querySelectorAll('#pm-tasks-list input[type="checkbox"]');
+                let total = checkboxes.length;
+                let checked = 0;
+                checkboxes.forEach(cb => { if(cb.checked) checked++; });
+                
+                const oil = document.getElementById('f-pm-oil').value;
+                const wearParts = document.getElementById('f-pm-parts').value;
+                
+                finalParts = wearParts || "No parts replaced";
+                if (oil) finalParts += ` | Oil/Grease: ${oil}`;
+                
+                finalAction = `PM Executed (${checked}/${total} tasks checked).`;
+            } else {
+                // If it's a normal breakdown, grab the normal inputs
+                finalParts = document.getElementById('f-parts').value || "None";
+                finalAction = document.getElementById('f-action').value || "Pending Check";
+            }
+
             const entry = {
                 date: document.getElementById('f-date').value,
                 shift: document.getElementById('f-shift').value,
                 asset: document.getElementById('f-asset').value,
-                category: document.getElementById('f-category').value,
+                category: cat,
                 time_lost: parseInt(document.getElementById('f-time').value) || 0,
                 status: document.getElementById('f-status').value,
-                parts_replaced: document.getElementById('f-parts').value || "None",
-                action_taken: document.getElementById('f-action').value || "Pending",
+                parts_replaced: finalParts,
+                action_taken: finalAction,
                 created_by: MASTER_ADMIN_EMAIL
             };
 
-            const btn = document.querySelector('.btn-primary');
             btn.innerText = "SAVING...";
 
             const { error } = await sb.from('cmms_logs').insert([entry]);
             if(!error) { 
                 fetchCMMSData(); 
-                document.getElementById('f-time').value = ''; document.getElementById('f-parts').value = ''; document.getElementById('f-action').value = '';
-                btn.innerText = "💾 SAVE TO MAINTENANCE LOG";
+                
+                // Clear all form inputs
+                document.getElementById('f-time').value = ''; 
+                document.getElementById('f-parts').value = ''; 
+                document.getElementById('f-action').value = '';
+                document.getElementById('f-pm-oil').value = '';
+                document.getElementById('f-pm-parts').value = '';
+                document.querySelectorAll('#pm-tasks-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+                
+                btn.innerText = "💾 SAVE TICKET TO MAINTENANCE LOG";
             } else { 
-                alert("DB Error: " + error.message); 
-                btn.innerText = "💾 SAVE TO MAINTENANCE LOG";
+                alert("Database Error: " + error.message); 
+                btn.innerText = "💾 SAVE TICKET TO MAINTENANCE LOG";
             }
         }
 
