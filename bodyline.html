@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v21.2 AI Data Analyst</title>
+    <title>RCC Bodyline OS | v22.0 ISO Audit Ledger</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -97,6 +97,9 @@
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto;}
         .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
         
+        .audit-record { background: var(--bg); border-left: 4px solid #8b5cf6; padding: 12px; margin-bottom: 10px; font-family: monospace; font-size: 11px; border-radius: 4px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .audit-record b { color: #8b5cf6; }
+
         @media print { 
             body { background: white; color: black; font-size: 10px;} 
             .fab, .cloud-status, .menu-overlay, #system-menu, .chat-panel, .admin-only, #admin-form-container, .tabs, #custom-time-matrix, #andon-banner, .header-spacer, .user-profile-container { display: none !important; } 
@@ -122,7 +125,7 @@
     <div id="portal-overlay">
         <div class="auth-card" id="auth-card">
             <h2 style="margin:0 0 5px 0; font-weight: 800; font-size: 28px;">RCC BODYLINE OS</h2>
-            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">AI DATA ANALYST v21.2</p>
+            <p style="font-size: 11px; color:var(--text-dim); margin-top: 0; font-weight: 600; letter-spacing: 1px;">ISO 9001 COMPLIANT v22.0</p>
             <input type="password" id="access-code" placeholder="PIN" autofocus onkeypress="if(event.key === 'Enter') authorize()">
             <button class="btn btn-primary" id="login-btn" onclick="authorize()">🔒 SECURE LOGIN</button>
             <button class="btn-guest" onclick="guestLogin()" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:10px; width:100%; border-radius:8px; cursor:pointer;">👀 VIEW AS GUEST</button>
@@ -287,6 +290,9 @@
         
         <div class="admin-only" style="margin-top: 20px;">
             <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 10px;">Admin Tools</h4>
+            
+            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 2px solid #8b5cf6; color: #8b5cf6;" onclick="openAuditLedger()">🛡️ ISO AUDIT LEDGER</button>
+            
             <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="exportExcel()">🟩 EXCEL (CURRENT VIEW)</button>
             <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="window.print()">🖨️ PDF (PRINT VIEW)</button>
             <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateSmartReport()">📋 AI DATA ANALYST REPORT</button>
@@ -332,9 +338,20 @@
         <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE</button>
     </div>
 
+    <div id="audit-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 2px solid #8b5cf6; padding-bottom: 10px; color: var(--text);">🛡️ IMMUTABLE AUDIT LEDGER</h2>
+        <p style="font-size:11px; color:var(--text-dim); margin-top:-5px;">Official ISO 9001 Compliance Track. Records cannot be deleted.</p>
+        <div id="audit-content" style="max-height: 400px; overflow-y: auto; padding-right:10px;">Loading records...</div>
+        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text); margin-top:15px;" onclick="closeModals()">CLOSE</button>
+    </div>
+
     <div id="edit-modal" class="modal">
         <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">✏️ EDIT PRODUCTION RECORD</h2>
         <input type="hidden" id="edit-id">
+        
+        <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">⚠️ ISO COMPLIANCE: REASON REQUIRED</label>
+        <textarea id="edit-reason" rows="2" placeholder="Strictly detail why you are altering this official record..." style="border: 2px solid var(--danger); margin-bottom:15px;"></textarea>
+
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
             <div><label style="font-size:10px; color:var(--text-dim);">TARGET</label><input type="number" id="edit-target"></div>
             <div><label style="font-size:10px; color:var(--text-dim);">ACTUAL</label><input type="number" id="edit-actual"></div>
@@ -353,9 +370,9 @@
             <div><label style="font-size:9px;">SCRATCH</label><input type="number" id="edit-scrap-scratch"></div>
             <div><label style="font-size:9px;">FLANGE</label><input type="number" id="edit-scrap-flange"></div>
         </div>
-        <textarea id="edit-comment" rows="2" placeholder="Update comments..."></textarea>
+        
         <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn btn-primary" onclick="submitEdit()">💾 SAVE CHANGES</button>
+            <button class="btn btn-primary" onclick="submitEdit()">💾 SIGN & SAVE CHANGES</button>
             <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); width:100%;" onclick="closeModals()">CANCEL</button>
         </div>
     </div>
@@ -451,7 +468,7 @@
 
             if (currentTime === autoEmailConfig.dayTrigger || currentTime === autoEmailConfig.nightTrigger) {
                 console.log(`%c 📧 EDGE FUNCTION TRIGGERED `, 'background: #2563eb; color: white; padding: 5px; font-weight:bold;');
-                sendEmailNow(); // Auto-triggers the email draft
+                sendEmailNow(); 
                 autoEmailConfig.lastSent = `${todayStr}-${currentTime}`;
                 localStorage.setItem('rcc_email_config', JSON.stringify(autoEmailConfig));
             }
@@ -558,6 +575,9 @@
             document.getElementById('kpi-down').innerText = curr.down + " m";
             document.getElementById('kpi-scrap').innerText = curr.scrap.toLocaleString();
 
+            const effEl = document.getElementById('kpi-eff');
+            effEl.innerHTML = `${curr.eff.toFixed(1)}% <span style="font-size:11px; background:var(--accent); color:white; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:8px; display:inline-block; font-weight:bold; letter-spacing:1px; box-shadow: 0 2px 5px rgba(37,99,235,0.3);">OEE: ${curr.oee.toFixed(1)}%</span>`;
+
             const setVar = (id, c, p, isPct = false, reverse = false) => {
                 const el = document.getElementById(id); if(!el) return;
                 if (currentMode === 'custom' || !p || p === 0) { el.innerText = "--"; el.className = "variance"; return; }
@@ -616,32 +636,109 @@
             if(!error) { 
                 await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ TRANSMIT RECORD"; }, 2000);
                 ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange', 'f-comment'].forEach(id => document.getElementById(id).value = '');
-            } else { alert("DB Error: Verify 'defect_' columns exist in Supabase."); btn.innerText = "☁️ TRANSMIT RECORD"; }
+            } else { alert("DB Error."); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
 
+        // ==========================================
+        // V22.0 ISO COMPLIANCE AUDIT ENGINE
+        // ==========================================
         function openEditModal(id) {
             const log = rawData.find(r => r.id === id); if(!log) return;
-            document.getElementById('edit-id').value = id; document.getElementById('edit-target').value = log.target; document.getElementById('edit-actual').value = log.actual;
+            document.getElementById('edit-id').value = id; 
+            document.getElementById('edit-reason').value = ''; // Reset the reason field
+            document.getElementById('edit-target').value = log.target; document.getElementById('edit-actual').value = log.actual;
             document.getElementById('edit-mech').value = log.down_mech || 0; document.getElementById('edit-elec').value = log.down_elec || 0; document.getElementById('edit-mat').value = log.down_mat || 0;
             document.getElementById('edit-qc').value = log.down_qc || 0; document.getElementById('edit-pack').value = log.down_pack || 0; 
             document.getElementById('edit-scrap-weld').value = log.defect_weld || 0; document.getElementById('edit-scrap-scratch').value = log.defect_scratch || 0; document.getElementById('edit-scrap-flange').value = log.defect_flange || 0;
-            document.getElementById('edit-comment').value = log.comment || '';
             document.getElementById('edit-modal').style.display = 'block'; document.getElementById('main-overlay').style.display = 'block';
         }
 
         async function submitEdit() {
             const id = document.getElementById('edit-id').value;
+            const reason = document.getElementById('edit-reason').value.trim();
+            
+            // ISO RULE 1: Reason is absolutely mandatory.
+            if(!reason) { alert("🛑 ISO COMPLIANCE BLOCK: You must state the exact reason for altering this official record."); return; }
+
+            const log = rawData.find(r => r.id == id);
             const updates = { 
                 target: parseInt(document.getElementById('edit-target').value)||0, actual: parseInt(document.getElementById('edit-actual').value)||0, 
                 down_mech: parseInt(document.getElementById('edit-mech').value)||0, down_elec: parseInt(document.getElementById('edit-elec').value)||0, down_mat: parseInt(document.getElementById('edit-mat').value)||0, down_qc: parseInt(document.getElementById('edit-qc').value)||0, down_pack: parseInt(document.getElementById('edit-pack').value)||0, 
-                defect_weld: parseInt(document.getElementById('edit-scrap-weld').value)||0, defect_scratch: parseInt(document.getElementById('edit-scrap-scratch').value)||0, defect_flange: parseInt(document.getElementById('edit-scrap-flange').value)||0,
-                comment: document.getElementById('edit-comment').value 
+                defect_weld: parseInt(document.getElementById('edit-scrap-weld').value)||0, defect_scratch: parseInt(document.getElementById('edit-scrap-scratch').value)||0, defect_flange: parseInt(document.getElementById('edit-scrap-flange').value)||0
             };
-            const { error } = await sb.from('production_logs').update(updates).eq('id', id);
-            if(!error) { closeModals(); await fetchData(); } else { alert("Failed to update."); }
+
+            // ISO RULE 2: Write to the Ghost Ledger before altering the actual record.
+            try {
+                const auditEntry = {
+                    action: 'UPDATE', record_id: id, machine: log.line,
+                    old_value: `Yield: ${log.actual}, Target: ${log.target}, Scrap: ${getTotalScrap(log)}`,
+                    new_value: `Yield: ${updates.actual}, Target: ${updates.target}, Scrap: ${updates.defect_weld + updates.defect_scratch + updates.defect_flange}`,
+                    reason: reason, changed_by: currentUser || 'Admin'
+                };
+                await sb.from('audit_logs').insert([auditEntry]);
+                
+                // Now safely update the main database
+                const { error } = await sb.from('production_logs').update(updates).eq('id', id);
+                if(!error) { closeModals(); await fetchData(); } else { alert("Database update failed."); }
+            } catch(e) {
+                alert("Audit system error. Action aborted.");
+            }
         }
 
-        async function deleteLog(id) { if(confirm("Delete this log?")) { await sb.from('production_logs').delete().eq('id', id); fetchData(); } }
+        async function deleteLog(id) { 
+            // ISO RULE 3: Mandatory reason for permanent deletion.
+            const reason = prompt("🛑 ISO COMPLIANCE CHECK: State reason for permanent deletion:");
+            if(!reason) { alert("Deletion cancelled. A valid reason is strictly required."); return; }
+            
+            const log = rawData.find(r => r.id == id);
+            
+            try {
+                const auditEntry = {
+                    action: 'DELETE', record_id: id, machine: log.line,
+                    old_value: `Date: ${log.date}, Yield: ${log.actual}, Target: ${log.target}`,
+                    new_value: `DELETED`,
+                    reason: reason, changed_by: currentUser || 'Admin'
+                };
+                await sb.from('audit_logs').insert([auditEntry]);
+                await sb.from('production_logs').delete().eq('id', id); 
+                fetchData(); 
+            } catch(e) {
+                alert("Audit system error. Deletion aborted.");
+            }
+        }
+
+        async function openAuditLedger() {
+            document.getElementById('system-menu').classList.remove('active');
+            document.getElementById('main-overlay').style.display = 'block';
+            document.getElementById('audit-modal').style.display = 'block';
+            document.getElementById('audit-content').innerHTML = "Fetching secure records...";
+            
+            try {
+                const { data, error } = await sb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(100);
+                if(error) throw error;
+                
+                if(data && data.length > 0) {
+                    document.getElementById('audit-content').innerHTML = data.map(l => {
+                        let color = l.action === 'DELETE' ? 'var(--danger)' : '#8b5cf6';
+                        return `
+                        <div class="audit-record" style="border-left-color: ${color}">
+                            <div><span style="color:var(--text-dim);">${new Date(l.created_at).toLocaleString()}</span> | <b>[${l.action}]</b> on ${l.machine}</div>
+                            <div style="margin-top:5px; color:var(--text);">👤 <b>User:</b> ${l.changed_by}</div>
+                            <div style="margin-top:2px; color:var(--text);">📝 <b>Reason:</b> <i>"${l.reason}"</i></div>
+                            <div style="margin-top:2px; color:var(--text-dim);">⏪ <b>From:</b> ${l.old_value}</div>
+                            <div style="margin-top:2px; color:var(--text-dim);">⏩ <b>To:</b> ${l.new_value}</div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    document.getElementById('audit-content').innerHTML = "No audit records found. Data is untouched.";
+                }
+            } catch(e) {
+                document.getElementById('audit-content').innerHTML = `<span style="color:var(--danger)">Error connecting to Audit Ledger. Ensure table 'audit_logs' is created in Supabase.</span>`;
+            }
+        }
+
+        // ==========================================
+
         function dismissAndon() { document.getElementById('andon-siren').style.display = 'none'; }
 
         function initCharts() {
@@ -689,16 +786,10 @@
             charts.shiftComp.data.datasets[0].data = [ filteredData.filter(r => r.shift === "Day Shift").reduce((sum,r)=>sum+(r.actual||0),0), filteredData.filter(r => r.shift === "Night Shift").reduce((sum,r)=>sum+(r.actual||0),0) ]; charts.shiftComp.update();
         }
 
-        // ==========================================
-        // V21.2 AI DATA ANALYST REPORT ENGINE
-        // ==========================================
         function generateSmartReportText() {
             if(filteredData.length === 0) return "No production data found for the selected timeframe.";
             
-            // Dynamic Timeframe
             let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
-            
-            // Aggregations
             const yield = filteredData.reduce((s,r)=>s+(r.actual||0),0); 
             const target = filteredData.reduce((s,r)=>s+(r.target||0),0); 
             const down = filteredData.reduce((s,r)=>s+getTotalDown(r),0);
@@ -718,7 +809,6 @@
                 scrapReasons["Bad Welds"] += (r.defect_weld||0); scrapReasons["Scratches"] += (r.defect_scratch||0); scrapReasons["Flanging Errors"] += (r.defect_flange||0);
             });
             
-            // Find bottlenecks
             let worstLine = "None"; let worstEff = 100;
             for(let l in lines) {
                 let lEff = lines[l].t > 0 ? (lines[l].a / lines[l].t * 100) : 100;
@@ -727,7 +817,6 @@
             let topDownReason = Object.keys(downReasons).reduce((a,b) => downReasons[a] > downReasons[b] ? a : b);
             let topScrapReason = Object.keys(scrapReasons).reduce((a,b) => scrapReasons[a] > scrapReasons[b] ? a : b);
 
-            // Construct Formal Letter
             let text = `SUBJECT: RCC Production Analytics Report - ${modeText}\n\n`;
             text += `Dear Management Team,\n\n`;
             text += `Please find the automated production and performance analysis for the selected timeframe (${modeText}) below.\n\n`;
@@ -794,8 +883,6 @@
                 alert("Report copied to clipboard! You can now paste it into Viber, Slack, or any Email client."); 
             }).catch(err => { alert("Copy failed: " + err); });
         }
-
-        // ==========================================
 
         async function fetchComments() {
             try {
