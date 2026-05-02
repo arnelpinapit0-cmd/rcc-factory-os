@@ -34,7 +34,6 @@
 
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px;}
         
-        /* PM MATRIX GRID */
         .pm-matrix { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
         .pm-card { padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border); background: var(--bg); transition: 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 60px;}
         .pm-card h4 { margin: 0 0 5px 0; font-size: 13px; font-weight: 800; text-transform: uppercase;}
@@ -63,7 +62,6 @@
         .status-progress { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
         .status-closed { background: rgba(16, 185, 129, 0.2); color: var(--success); }
 
-        /* DIGITAL CHECKLIST UI */
         .pm-task-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: 0.2s; margin-bottom: 6px;}
         .pm-task-item:hover { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
         .pm-task-item input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--success); cursor: pointer; flex-shrink: 0;}
@@ -87,6 +85,7 @@
     </div>
 
     <div class="main-content">
+        <!-- KPI GRID -->
         <div class="kpi-grid">
             <div class="kpi-card"><small>⚠️ Breakdown Tickets</small><div id="kpi-tickets" class="val">0</div></div>
             <div class="kpi-card"><small>⏱️ Downtime Mins (This Month)</small><div id="kpi-mins" class="val" style="color:var(--danger)">0</div></div>
@@ -94,13 +93,16 @@
             <div class="kpi-card"><small>✅ PMs Executed (This Month)</small><div id="kpi-pms" class="val" style="color:var(--success)">0</div></div>
         </div>
 
+        <!-- LIVE PM STATUS MATRIX -->
         <div class="panel">
             <h3 style="margin:0; color:var(--text); font-size: 14px; text-transform: uppercase;">📅 Preventive Maintenance Status Matrix</h3>
             <p style="margin:5px 0 0 0; font-size:11px; color:var(--text-dim);">Tracks if an official PM checklist has been completed for each production line this month.</p>
             <div class="pm-matrix" id="pm-grid">
-                </div>
+                <!-- Auto-populated by JS -->
+            </div>
         </div>
 
+        <!-- MAINTENANCE DATA ENTRY -->
         <div class="panel" style="border: 1px solid var(--accent);">
             <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">🛠️ Log a Breakdown Ticket or Execute PM</h3>
             
@@ -157,8 +159,7 @@
                     <span style="font-size:10px; color:var(--success); background: rgba(16, 185, 129, 0.2); padding: 3px 8px; border-radius:12px; font-weight:bold;">AUTO-SYNCED FROM EXCEL</span>
                 </div>
                 
-                <div id="pm-tasks-list" style="margin-bottom: 20px; display: flex; flex-direction: column; max-height: 250px; overflow-y: auto; padding-right: 5px;">
-                    </div>
+                <div id="pm-tasks-list" style="margin-bottom: 20px; display: flex; flex-direction: column; max-height: 250px; overflow-y: auto; padding-right: 5px;"></div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 15px;">
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">🛢️ GREASE / OIL REFILL DETAIL</label><input type="text" id="f-pm-oil" placeholder="What oil/grease was added? (e.g. Multi-lube 100)"></div>
@@ -182,9 +183,6 @@
     </div>
 
     <script>
-        // =========================================================================
-        // 🔒 THE MASTER KEY
-        // =========================================================================
         const MASTER_ADMIN_EMAIL = "engr.pinapit@rcc.com"; 
         
         const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
@@ -193,9 +191,6 @@
 
         let rawData = [];
 
-        // =========================================================================
-        // 💾 EXCEL SPREADSHEET DATA ENGINE (Mapped to original Asset names!)
-        // =========================================================================
         const excelPMTasks = {
           "Line 1 / SOUCAN 640": [
             "Record the piece counter and hour meter reading.",
@@ -331,7 +326,6 @@
           ]
         };
 
-        // --- UI INTERACTION ENGINE ---
         function togglePMMode() {
             const cat = document.getElementById('f-category').value;
             const pmContainer = document.getElementById('pm-checklist-container');
@@ -340,7 +334,7 @@
             if (cat === "Preventive Maintenance (PM)") {
                 pmContainer.style.display = 'block';
                 regularFields.style.display = 'none';
-                generatePMChecklist(); // Render checklist immediately when toggled
+                generatePMChecklist();
             } else {
                 pmContainer.style.display = 'none';
                 regularFields.style.display = 'grid';
@@ -365,7 +359,6 @@
             `).join('');
         }
 
-        // --- SECURITY ROUTING ---
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
             let activeEmail = session ? session.user.email : localStorage.getItem('rcc_user');
@@ -386,7 +379,6 @@
             }
         }
 
-        // --- DATABASE DATA LOGIC ---
         async function fetchCMMSData() { 
             const { data, error } = await sb.from('cmms_logs').select('*').order('date', {ascending:false}); 
             if(error) { console.error("Database Error:", error.message); return; }
@@ -394,18 +386,15 @@
         }
 
         function processData() {
-            // Filter to current month for accurate PM tracking
             const today = new Date();
             const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             const thisMonthData = rawData.filter(r => r.date.startsWith(currentMonth));
 
-            // KPI Updates
             document.getElementById('kpi-tickets').innerText = rawData.filter(r => !r.category.includes('Preventive')).length;
             document.getElementById('kpi-mins').innerText = thisMonthData.reduce((s,r) => s + (r.time_lost||0), 0);
             document.getElementById('kpi-open').innerText = rawData.filter(r => r.status === 'Open').length;
             document.getElementById('kpi-pms').innerText = thisMonthData.filter(r => r.category.includes('Preventive')).length;
 
-            // Render Table
             document.getElementById('log-body').innerHTML = rawData.map(r => {
                 let sClass = r.status === 'Open' ? 'status-open' : (r.status === 'Completed' ? 'status-closed' : 'status-progress');
                 let catStyle = r.category.includes('Preventive') ? 'color:var(--success);' : 'color:var(--danger);';
@@ -420,12 +409,9 @@
                 </tr>`;
             }).join('');
 
-            // Render PM Matrix Grid (Checking if ANY asset starting with "Line X" had a PM)
             const plantLines = ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5", "Line 6", "Slitter"];
             const matrixHTML = plantLines.map(lineName => {
-                // If a log's asset name includes "Line 1" or "SLITTER" AND is a PM log
                 const hasPM = thisMonthData.some(r => r.asset.toLowerCase().includes(lineName.toLowerCase()) && r.category.includes('Preventive'));
-                
                 if(hasPM) {
                     return `<div class="pm-card pm-done"><h4>${lineName}</h4><span>✅ PM Done</span></div>`;
                 } else {
@@ -443,7 +429,6 @@
             let finalParts = "";
             let finalAction = "";
 
-            // If it's a PM, calculate checkboxes and grab the special Oil/Parts inputs
             if (cat === "Preventive Maintenance (PM)") {
                 const checkboxes = document.querySelectorAll('#pm-tasks-list input[type="checkbox"]');
                 let total = checkboxes.length;
@@ -458,7 +443,6 @@
                 
                 finalAction = `PM Executed (${checked}/${total} tasks checked).`;
             } else {
-                // If it's a normal breakdown, grab the normal inputs
                 finalParts = document.getElementById('f-parts').value || "None";
                 finalAction = document.getElementById('f-action').value || "Pending Check";
             }
@@ -480,15 +464,12 @@
             const { error } = await sb.from('cmms_logs').insert([entry]);
             if(!error) { 
                 fetchCMMSData(); 
-                
-                // Clear all form inputs
                 document.getElementById('f-time').value = ''; 
                 document.getElementById('f-parts').value = ''; 
                 document.getElementById('f-action').value = '';
                 document.getElementById('f-pm-oil').value = '';
                 document.getElementById('f-pm-parts').value = '';
                 document.querySelectorAll('#pm-tasks-list input[type="checkbox"]').forEach(cb => cb.checked = false);
-                
                 btn.innerText = "💾 SAVE TICKET TO MAINTENANCE LOG";
             } else { 
                 alert("Database Error: " + error.message); 
