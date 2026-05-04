@@ -6,11 +6,13 @@
     <title>RCC CMMS | Preventive Maintenance</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         
         :root { --bg: #0f172a; --surface: #1e293b; --accent: #8b5cf6; --text: #f8fafc; --text-dim: #94a3b8; --border: #334155; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
+        body.dark-mode { --bg: #0f172a; --surface: #1e293b; --accent: #8b5cf6; --text: #f8fafc; --text-dim: #94a3b8; --border: #334155; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; display: none; } 
 
         .header-banner { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 15px 30px; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -56,6 +58,10 @@
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th { text-align: left; padding: 12px 10px; border-bottom: 2px solid var(--border); color: var(--text-dim); text-transform: uppercase; background: var(--surface); position: sticky; top:0; z-index: 2;}
         td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+        .admin-only { display: none; } 
+        .action-cell { display: flex; gap: 10px; }
+        .icon-btn { background: none; border: none; font-size: 14px; cursor: pointer; opacity: 0.6; transition: 0.2s; color: var(--text);}
+        .icon-btn:hover { opacity: 1; transform: scale(1.2); }
         
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
         .status-open { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
@@ -66,6 +72,27 @@
         .pm-task-item:hover { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
         .pm-task-item input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--success); cursor: pointer; flex-shrink: 0;}
         .pm-task-item label { font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; line-height: 1.4; }
+
+        /* THE SETTINGS MENU & MODALS */
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4); transition: 0.3s; }
+        .fab:hover { transform: rotate(90deg); }
+        #system-menu { position: fixed; top: 0; right: -420px; width: 400px; height: 100%; background: var(--surface); border-left: 1px solid var(--border); z-index: 2001; transition: 0.4s; padding: 30px; box-sizing: border-box; visibility: hidden; overflow-y: auto; box-shadow: -5px 0 25px rgba(0,0,0,0.5);}
+        #system-menu.active { right: 0; visibility: visible; }
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; }
+
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto;}
+        .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
+        
+        .audit-record { background: var(--bg); border-left: 4px solid #8b5cf6; padding: 12px; margin-bottom: 10px; font-family: monospace; font-size: 11px; border-radius: 4px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .audit-record b { color: #8b5cf6; }
+
+        @media print { 
+            body { background: white; color: black; font-size: 10px; display: block;} 
+            .fab, .menu-overlay, #system-menu, .admin-only, #admin-form-container, .tabs, .header-spacer, .user-profile-container { display: none !important; } 
+            .header-banner { border-bottom: 2px solid black; padding: 10px 0; margin-bottom: 15px; }
+            .kpi-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+            .kpi-card { width: 23%; padding: 10px; box-shadow: none; border: 1px solid #ccc; }
+        }
     </style>
 </head>
 <body>
@@ -85,7 +112,6 @@
     </div>
 
     <div class="main-content">
-        <!-- KPI GRID -->
         <div class="kpi-grid">
             <div class="kpi-card"><small>⚠️ Breakdown Tickets</small><div id="kpi-tickets" class="val">0</div></div>
             <div class="kpi-card"><small>⏱️ Downtime Mins (This Month)</small><div id="kpi-mins" class="val" style="color:var(--danger)">0</div></div>
@@ -93,17 +119,14 @@
             <div class="kpi-card"><small>✅ PMs Executed (This Month)</small><div id="kpi-pms" class="val" style="color:var(--success)">0</div></div>
         </div>
 
-        <!-- LIVE PM STATUS MATRIX -->
         <div class="panel">
             <h3 style="margin:0; color:var(--text); font-size: 14px; text-transform: uppercase;">📅 Preventive Maintenance Status Matrix</h3>
             <p style="margin:5px 0 0 0; font-size:11px; color:var(--text-dim);">Tracks if an official PM checklist has been completed for each production line this month.</p>
             <div class="pm-matrix" id="pm-grid">
-                <!-- Auto-populated by JS -->
-            </div>
+                </div>
         </div>
 
-        <!-- MAINTENANCE DATA ENTRY -->
-        <div class="panel" style="border: 1px solid var(--accent);">
+        <div class="panel admin-only" id="admin-form-container" style="border: 1px solid var(--accent);">
             <h3 style="margin:0 0 15px 0; color:var(--accent); font-size: 13px; text-transform: uppercase;">🛠️ Log a Breakdown Ticket or Execute PM</h3>
             
             <div class="admin-form-grid">
@@ -174,7 +197,7 @@
             <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Central CMMS History Log</h3>
             <div style="overflow-y:auto; height: 350px;">
                 <table id="log-table">
-                    <thead><tr><th>Date</th><th>Asset Line</th><th>Category</th><th>Time (Mins)</th><th>Action Taken</th><th>Parts / Oil</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Shift</th><th>Asset Line</th><th>Category</th><th>Time (Mins)</th><th>Action Taken</th><th>Parts / Oil</th><th>Status</th><th class="admin-only">Action</th></tr></thead>
                     <tbody id="log-body"></tbody>
                 </table>
             </div>
@@ -182,181 +205,147 @@
 
     </div>
 
+    <div class="fab admin-only" onclick="toggleMenu()">⚙️</div>
+    <div class="menu-overlay" onclick="toggleMenu()" id="main-overlay"></div>
+    <div id="system-menu">
+        <h2 style="font-weight: 800; color: var(--text); margin-top: 0;">RCC CONTROLS</h2>
+        <button class="btn" style="width:100%; margin-bottom:20px; background: var(--danger); color: white;" onclick="logoutSecurely()">🔒 SECURE LOGOUT</button>
+        <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="toggleTheme()">🌓 TOGGLE DARK MODE</button>
+        
+        <div class="admin-only" style="margin-top: 20px;">
+            <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 10px;">Admin Tools</h4>
+            
+            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 2px solid #8b5cf6; color: #8b5cf6;" onclick="openAuditLedger()">🛡️ ISO AUDIT LEDGER</button>
+            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="exportExcel()">🟩 EXCEL (CURRENT VIEW)</button>
+            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="window.print()">🖨️ PDF (PRINT VIEW)</button>
+            <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateSmartReport()">📋 AI MAINTENANCE REPORT</button>
+            
+            <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">✉️ Report Dispatcher</h4>
+            <div style="background:var(--bg); padding:15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <label style="font-size:9px; font-weight:bold; color:var(--text-dim);">SEND TO (COMMA SEPARATED)</label>
+                <input type="text" id="email-list" placeholder="manager@rcc.com, ceo@rcc.com" style="margin-bottom:10px; padding:10px; font-size:11px;">
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex:1;"><label style="font-size:9px; color:var(--text-dim);">DAY SHIFT AUTO</label><input type="time" id="email-time-day" style="padding:10px; font-size:11px;"></div>
+                    <div style="flex:1;"><label style="font-size:9px; color:var(--text-dim);">NIGHT SHIFT AUTO</label><input type="time" id="email-time-night" style="padding:10px; font-size:11px;"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding:5px 0; margin-bottom: 10px;">
+                    <input type="checkbox" id="email-toggle" style="width:16px; height:16px; margin:0;"> 
+                    <label style="font-size:11px; font-weight:bold; cursor:pointer;" for="email-toggle">Enable Auto-Trigger</label>
+                </div>
+                <button class="btn btn-primary" onclick="saveEmailSettings()" style="margin-bottom:5px; padding:10px; font-size:10px; background:var(--accent);">💾 SAVE CONFIGURATION</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                    <button class="btn" onclick="sendEmailNow()" style="background:var(--success); color:white; padding:10px; font-size:10px;">📧 DRAFT EMAIL NOW</button>
+                    <button class="btn" onclick="copyReportNow()" style="background:var(--warning); color:white; padding:10px; font-size:10px;">📋 COPY TO CLIPBOARD</button>
+                </div>
+            </div>
+        </div>
+        
+        <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">📝 Maintenance Notepad</h4>
+        <textarea id="cmms-notepad" placeholder="Shift Reminders (Auto-Saves)..." oninput="saveNotes()" style="height: 100px; margin-bottom: 20px;"></textarea>
+
+        <div id="access-log-section" style="margin-top: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin:0;">🔒 Access Logs</h4>
+                <button onclick="fetchAccessLogs()" style="background:var(--accent); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:9px; cursor:pointer; font-weight:bold;">↻ REFRESH</button>
+            </div>
+            <div id="access-log-display" style="font-family:monospace; font-size:10px; height:120px; overflow-y:auto; background:var(--bg); padding:10px; border-radius: 6px; border: 1px solid var(--border);"></div>
+        </div>
+
+        <button class="btn" style="width:100%; margin-top:20px; background: var(--border); color: var(--text);" onclick="toggleMenu()">CLOSE MENU</button>
+    </div>
+
+    <div id="report-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">🤖 AI MAINTENANCE SUMMARY</h2>
+        <div id="report-content" class="modal-content-box" style="white-space: pre-wrap;">Analyzing maintenance records...</div>
+        <button class="btn btn-primary" onclick="downloadReport()" style="margin-bottom: 10px;">💾 DOWNLOAD REPORT</button>
+        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE</button>
+    </div>
+
+    <div id="audit-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 2px solid #8b5cf6; padding-bottom: 10px; color: var(--text);">🛡️ IMMUTABLE AUDIT LEDGER</h2>
+        <p style="font-size:11px; color:var(--text-dim); margin-top:-5px;">Official ISO 9001 Compliance Track for CMMS Logs.</p>
+        <div id="audit-content" style="max-height: 400px; overflow-y: auto; padding-right:10px;">Loading records...</div>
+        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text); margin-top:15px;" onclick="closeModals()">CLOSE</button>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">✏️ EDIT WORK ORDER</h2>
+        <input type="hidden" id="edit-id">
+        
+        <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">⚠️ ISO COMPLIANCE: REASON REQUIRED</label>
+        <textarea id="edit-reason" rows="2" placeholder="Strictly detail why you are altering this official record..." style="border: 2px solid var(--danger); margin-bottom:15px;"></textarea>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div><label style="font-size:10px; color:var(--text-dim);">TIME LOST (MINS)</label><input type="number" id="edit-time"></div>
+            <div><label style="font-size:10px; color:var(--text-dim);">STATUS</label>
+                <select id="edit-status">
+                    <option value="Completed">✅ Completed / Fixed</option>
+                    <option value="In Progress">⏳ In Progress</option>
+                    <option value="Open">🚨 Open / Awaiting Parts</option>
+                </select>
+            </div>
+        </div>
+        
+        <label style="font-size:10px; color:var(--text-dim); display:block; margin-bottom:5px;">ACTION TAKEN</label>
+        <input type="text" id="edit-action" style="margin-bottom:10px;">
+
+        <label style="font-size:10px; color:var(--text-dim); display:block; margin-bottom:5px;">PARTS REPLACED</label>
+        <input type="text" id="edit-parts" style="margin-bottom:10px;">
+        
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn btn-primary" onclick="submitEdit()">💾 SIGN & SAVE CHANGES</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); width:100%;" onclick="closeModals()">CANCEL</button>
+        </div>
+    </div>
+
     <script>
-        const MASTER_ADMIN_EMAIL = "engr.pinapit@rcc.com"; 
+        const MASTER_ADMIN_EMAIL = "Engr.Pinapit@rcc.com"; 
         
         const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3am5ic2x4ZHNzeXJpb2tjZHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDg1MDUsImV4cCI6MjA5MTIyNDUwNX0.sNFCBZoSwZS0b5eU6iBmLeTt5ru7dP8G2GYJ9hrxAFg";
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
-        let rawData = [];
+        let rawData = []; let isEngineer = false; let currentUser = "GUEST";
+        let autoEmailConfig = { enabled: false, emails: '', dayTrigger: '18:05', nightTrigger: '06:05', lastSent: null };
 
         const excelPMTasks = {
-          "Line 1 / SOUCAN 640": [
-            "Record the piece counter and hour meter reading.",
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Remove calibrating tool 65 dia., clean and check rotation. Replace ball bearing if necessary.",
-            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Change oil of ATLAS COPCO vacuum pump.",
-            "Clean and check cooling water inlet filter.",
-            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
-          ],
-          "Line 1 / FREI-APC & YUAN-ROX OVEN": [
-            "[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.",
-            "[OVEN] Check conveyor rollers ball bearing.",
-            "[OVEN] Check water level of water chiller & add water if required.",
-            "[OVEN] Dismantle, clean air & gas hose for each burner. Blow clogged burner element.",
-            "[OVEN] Cleaning of conveying system and heating elements."
-          ],
-          "Line 2 / CANMAN X-7": [
-            "Record the piece counter and hour meter reading.",
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Check and clean lacquer spray system including filter and ventilator.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Remove calibrating tool 52 dia., clean and check roller rotation.",
-            "Clean and check Conveyor and rounding rolls.",
-            "Clean and check cooling water inlet filter.",
-            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
-          ],
-          "Line 2 / FREI-EPC & YUAN-ROX OVEN": [
-            "[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.",
-            "[FREI] Check and clean filter discs for soiling.",
-            "[OVEN] Check conveyor rollers ball bearing.",
-            "[OVEN] Check water level of water chiller & add water if required.",
-            "[OVEN] Cleaning of conveying system and heating elements."
-          ],
-          "Line 3 / SOUCAN 650": [
-            "Record the piece counter and hour meter reading.",
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Check and clean lacquer spray system including filter and ventilator.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Remove calibrating tool 52 dia., clean and check roller rotation.",
-            "Change oil of GARDNER vacuum pump.",
-            "Clean and check cooling water inlet filter.",
-            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
-          ],
-          "Line 3 / FREI-CPC & YUAN-ROX OVEN": [
-            "[FREI] Check and clean container #1, #2 and #3 of filter cartridges.",
-            "[FREI] Check and clean filter discs for soiling.",
-            "[OVEN] Check conveyor rollers ball bearing.",
-            "[OVEN] Check water level of water chiller & add water if required.",
-            "[OVEN] Cleaning of conveying system and heating elements."
-          ],
-          "Line 4 / FBB 5600 KM 13697": [
-            "Record the piece counter and hour meter reading.",
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Remove calibrating tool 52 dia., clean and check roller rotation.",
-            "Change oil of GARDNER vacuum pump.",
-            "Clean and check cooling water inlet filter.",
-            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
-          ],
-          "Line 4 / FREI-EPC & FREI-PCA OVEN": [
-            "[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.",
-            "[FREI] Check and clean filter discs for soiling.",
-            "[OVEN] Check turning unit of main drive. Check oil leak, replace seal if necessary.",
-            "[OVEN] Remove and clean oven filter using air pressure.",
-            "[OVEN] Dismantle, clean air & gas hose for each burner. Blow clogged burner."
-          ],
-          "Line 5 / FBB 5600 KM 13640": [
-            "Record the piece counter and hour meter reading.",
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Check and clean lacquer spray system including filter and ventilator.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Change oil of ATLAS COPCO vacuum pump.",
-            "Remove calibrating tool 52 dia., clean and check roller rotation.",
-            "Clean and check cooling water inlet filter.",
-            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
-          ],
-          "Line 5 / YUAN-ROX OVEN": [
-            "Check conveyor rollers ball bearing.",
-            "Check water level of water chiller & add water if required.",
-            "Cleaning of conveying system and heating elements."
-          ],
-          "Line 6 / SOUCAN 650": [
-            "Record the piece counter and hour meter reading.",
-            "Redress upper/lower welding rollers, reset up and testing.",
-            "Refill oil in all gearboxes & varietor, replace oil seal if leaking.",
-            "Remove and clean FREI ORC, lacquer container.",
-            "Check and clean lacquer spray system including filter and ventilator.",
-            "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.",
-            "Clean and check Conveyor and rounding rolls, Double sheet flap.",
-            "Remove calibrating tool 52 dia., clean and check roller rotation.",
-            "Change oil of GARDNER vacuum pump.",
-            "Clean and check cooling water inlet filter.",
-            "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."
-          ],
-          "Line 6 / FREI-CPC & YUAN-ROX OVEN": [
-            "[FREI] Check and clean container #1, #2 and #3 of filter cartridges.",
-            "[FREI] Check and clean filter discs for soiling.",
-            "[OVEN] Check conveyor rollers ball bearing.",
-            "[OVEN] Check water level of water chiller & add water if required.",
-            "[OVEN] Cleaning of conveying system and heating elements."
-          ],
-          "SLITTER / MAWAG": [
-            "Clean and check air service unit.",
-            "Check for air leaks on pneumatic cylinders and solenoid valve.",
-            "Check oil level of all gear box drives refill if needed.",
-            "Check chain tension, clean & apply grease.",
-            "Check for wear and tear of chain conveyor, chain dogs and sprocket.",
-            "Clean oil guide shaft insertion unit on 1st and 2nd operation table.",
-            "Check chain, belt tension and clean as needed."
-          ],
-          "SLITTER / S-B34": [
-            "Clean and check air service unit.",
-            "Check for air leaks on pneumatic cylinders and solenoid valve.",
-            "Check oil level of all gear box drives refill if needed.",
-            "Check chain tension, clean & apply grease.",
-            "Check for wear and tear of chain conveyor, chain dogs and sprocket.",
-            "Clean oil guide shaft insertion unit on 1st and 2nd operation table.",
-            "Check chain, belt tension and clean as needed."
-          ]
+          "Line 1 / SOUCAN 640": ["Record the piece counter and hour meter reading.", "Redress upper/lower welding rollers, reset up and testing.", "Remove calibrating tool 65 dia., clean and check rotation. Replace ball bearing if necessary.", "Refill oil in all gearboxes & varietor, replace oil seal if leaking.", "Remove and clean FREI ORC, lacquer container.", "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.", "Clean and check Conveyor and rounding rolls, Double sheet flap.", "Change oil of ATLAS COPCO vacuum pump.", "Clean and check cooling water inlet filter.", "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."],
+          "Line 1 / FREI-APC & YUAN-ROX OVEN": ["[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.", "[OVEN] Check conveyor rollers ball bearing.", "[OVEN] Check water level of water chiller & add water if required.", "[OVEN] Dismantle, clean air & gas hose for each burner. Blow clogged burner element.", "[OVEN] Cleaning of conveying system and heating elements."],
+          "Line 2 / CANMAN X-7": ["Record the piece counter and hour meter reading.", "Redress upper/lower welding rollers, reset up and testing.", "Remove and clean FREI ORC, lacquer container.", "Check and clean lacquer spray system including filter and ventilator.", "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.", "Remove calibrating tool 52 dia., clean and check roller rotation.", "Clean and check Conveyor and rounding rolls.", "Clean and check cooling water inlet filter.", "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."],
+          "Line 2 / FREI-EPC & YUAN-ROX OVEN": ["[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.", "[FREI] Check and clean filter discs for soiling.", "[OVEN] Check conveyor rollers ball bearing.", "[OVEN] Check water level of water chiller & add water if required.", "[OVEN] Cleaning of conveying system and heating elements."],
+          "Line 3 / SOUCAN 650": ["Record the piece counter and hour meter reading.", "Redress upper/lower welding rollers, reset up and testing.", "Refill oil in all gearboxes & varietor, replace oil seal if leaking.", "Remove and clean FREI ORC, lacquer container.", "Check and clean lacquer spray system including filter and ventilator.", "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.", "Clean and check Conveyor and rounding rolls, Double sheet flap.", "Remove calibrating tool 52 dia., clean and check roller rotation.", "Change oil of GARDNER vacuum pump.", "Clean and check cooling water inlet filter.", "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."],
+          "Line 3 / FREI-CPC & YUAN-ROX OVEN": ["[FREI] Check and clean container #1, #2 and #3 of filter cartridges.", "[FREI] Check and clean filter discs for soiling.", "[OVEN] Check conveyor rollers ball bearing.", "[OVEN] Check water level of water chiller & add water if required.", "[OVEN] Cleaning of conveying system and heating elements."],
+          "Line 4 / FBB 5600 KM 13697": ["Record the piece counter and hour meter reading.", "Redress upper/lower welding rollers, reset up and testing.", "Refill oil in all gearboxes & varietor, replace oil seal if leaking.", "Remove and clean FREI ORC, lacquer container.", "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.", "Clean and check Conveyor and rounding rolls, Double sheet flap.", "Remove calibrating tool 52 dia., clean and check roller rotation.", "Change oil of GARDNER vacuum pump.", "Clean and check cooling water inlet filter.", "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."],
+          "Line 4 / FREI-EPC & FREI-PCA OVEN": ["[FREI] Check and clean container #1, #2, #3, and #4 of filter cartridges.", "[FREI] Check and clean filter discs for soiling.", "[OVEN] Check turning unit of main drive. Check oil leak, replace seal if necessary.", "[OVEN] Remove and clean oven filter using air pressure.", "[OVEN] Dismantle, clean air & gas hose for each burner. Blow clogged burner."],
+          "Line 5 / FBB 5600 KM 13640": ["Record the piece counter and hour meter reading.", "Redress upper/lower welding rollers, reset up and testing.", "Refill oil in all gearboxes & varietor, replace oil seal if leaking.", "Remove and clean FREI ORC, lacquer container.", "Check and clean lacquer spray system including filter and ventilator.", "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.", "Clean and check Conveyor and rounding rolls, Double sheet flap.", "Change oil of ATLAS COPCO vacuum pump.", "Remove calibrating tool 52 dia., clean and check roller rotation.", "Clean and check cooling water inlet filter.", "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."],
+          "Line 5 / YUAN-ROX OVEN": ["Check conveyor rollers ball bearing.", "Check water level of water chiller & add water if required.", "Cleaning of conveying system and heating elements."],
+          "Line 6 / SOUCAN 650": ["Record the piece counter and hour meter reading.", "Redress upper/lower welding rollers, reset up and testing.", "Refill oil in all gearboxes & varietor, replace oil seal if leaking.", "Remove and clean FREI ORC, lacquer container.", "Check and clean lacquer spray system including filter and ventilator.", "Lubricate roll forming unit, wire chopper, welding force balancer, wire profile, pendulum assembly.", "Clean and check Conveyor and rounding rolls, Double sheet flap.", "Remove calibrating tool 52 dia., clean and check roller rotation.", "Change oil of GARDNER vacuum pump.", "Clean and check cooling water inlet filter.", "Insulation check of Welding arm/Z-bar, Wire pulleys, Calibrating tool."],
+          "Line 6 / FREI-CPC & YUAN-ROX OVEN": ["[FREI] Check and clean container #1, #2 and #3 of filter cartridges.", "[FREI] Check and clean filter discs for soiling.", "[OVEN] Check conveyor rollers ball bearing.", "[OVEN] Check water level of water chiller & add water if required.", "[OVEN] Cleaning of conveying system and heating elements."],
+          "SLITTER / MAWAG": ["Clean and check air service unit.", "Check for air leaks on pneumatic cylinders and solenoid valve.", "Check oil level of all gear box drives refill if needed.", "Check chain tension, clean & apply grease.", "Check for wear and tear of chain conveyor, chain dogs and sprocket.", "Clean oil guide shaft insertion unit on 1st and 2nd operation table.", "Check chain, belt tension and clean as needed."],
+          "SLITTER / S-B34": ["Clean and check air service unit.", "Check for air leaks on pneumatic cylinders and solenoid valve.", "Check oil level of all gear box drives refill if needed.", "Check chain tension, clean & apply grease.", "Check for wear and tear of chain conveyor, chain dogs and sprocket.", "Clean oil guide shaft insertion unit on 1st and 2nd operation table.", "Check chain, belt tension and clean as needed."]
         };
 
         function togglePMMode() {
             const cat = document.getElementById('f-category').value;
-            const pmContainer = document.getElementById('pm-checklist-container');
-            const regularFields = document.getElementById('regular-fields');
-            
             if (cat === "Preventive Maintenance (PM)") {
-                pmContainer.style.display = 'block';
-                regularFields.style.display = 'none';
+                document.getElementById('pm-checklist-container').style.display = 'block';
+                document.getElementById('regular-fields').style.display = 'none';
                 generatePMChecklist();
             } else {
-                pmContainer.style.display = 'none';
-                regularFields.style.display = 'grid';
+                document.getElementById('pm-checklist-container').style.display = 'none';
+                document.getElementById('regular-fields').style.display = 'grid';
             }
         }
 
         function generatePMChecklist() {
             const asset = document.getElementById('f-asset').value;
-            const listDiv = document.getElementById('pm-tasks-list');
             const tasks = excelPMTasks[asset] || [];
-            
-            if (tasks.length === 0) {
-                listDiv.innerHTML = `<span style="font-size:11px; color:var(--warning);">No specific PM tasks found for this asset. Proceed with standard manual inspection.</span>`;
-                return;
-            }
-            
-            listDiv.innerHTML = tasks.map((task, index) => `
+            if (tasks.length === 0) { document.getElementById('pm-tasks-list').innerHTML = `<span style="font-size:11px; color:var(--warning);">No specific PM tasks found. Proceed manually.</span>`; return; }
+            document.getElementById('pm-tasks-list').innerHTML = tasks.map((task, index) => `
                 <div class="pm-task-item" onclick="document.getElementById('pm-task-${index}').click()">
                     <input type="checkbox" id="pm-task-${index}" value="${task}" onclick="event.stopPropagation()">
                     <label for="pm-task-${index}" onclick="event.stopPropagation()">${task}</label>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
         async function checkSession() {
@@ -364,15 +353,19 @@
             let activeEmail = session ? session.user.email : localStorage.getItem('rcc_user');
 
             if (activeEmail && activeEmail.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+                currentUser = activeEmail;
+                isEngineer = true;
                 document.body.style.display = 'block';
                 const displayUser = activeEmail.split('@')[0];
                 document.getElementById('user-display').innerText = displayUser;
                 document.getElementById('user-avatar').innerText = displayUser.charAt(0).toUpperCase();
                 
-                document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-                setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+                document.querySelectorAll('.admin-only').forEach(el => { el.style.display = 'block'; });
                 
-                fetchCMMSData();
+                document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+                setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); checkAutomations(); }, 1000);
+                
+                loadEmailSettings(); loadNotes(); fetchCMMSData();
             } else {
                 alert(`SECURITY BLOCK: CMMS Maintenance is restricted to the Chief Engineer.`);
                 window.location.href = 'bodyline.html';
@@ -381,7 +374,6 @@
 
         async function fetchCMMSData() { 
             const { data, error } = await sb.from('cmms_logs').select('*').order('date', {ascending:false}); 
-            if(error) { console.error("Database Error:", error.message); return; }
             if(data) { rawData = data; processData(); } 
         }
 
@@ -400,47 +392,39 @@
                 let catStyle = r.category.includes('Preventive') ? 'color:var(--success);' : 'color:var(--danger);';
                 return `<tr>
                     <td>${r.date}</td>
+                    <td>${r.shift[0]}</td>
                     <td><b>${r.asset}</b></td>
                     <td style="font-weight:bold; ${catStyle}">${r.category}</td>
                     <td>${r.time_lost}m</td>
                     <td>${r.action_taken}</td>
                     <td>${r.parts_replaced}</td>
                     <td><span class="status-badge ${sClass}">${r.status}</span></td>
+                    <td class="admin-only"><div class="action-cell"><button class="icon-btn" onclick="openEditModal(${r.id})">✏️</button><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></div></td>
                 </tr>`;
             }).join('');
 
             const plantLines = ["Line 1", "Line 2", "Line 3", "Line 4", "Line 5", "Line 6", "Slitter"];
             const matrixHTML = plantLines.map(lineName => {
                 const hasPM = thisMonthData.some(r => r.asset.toLowerCase().includes(lineName.toLowerCase()) && r.category.includes('Preventive'));
-                if(hasPM) {
-                    return `<div class="pm-card pm-done"><h4>${lineName}</h4><span>✅ PM Done</span></div>`;
-                } else {
-                    return `<div class="pm-card pm-due"><h4>${lineName}</h4><span>⚠️ PM Due</span></div>`;
-                }
+                if(hasPM) { return `<div class="pm-card pm-done"><h4>${lineName}</h4><span>✅ PM Done</span></div>`; } 
+                else { return `<div class="pm-card pm-due"><h4>${lineName}</h4><span>⚠️ PM Due</span></div>`; }
             }).join('');
-            
             document.getElementById('pm-grid').innerHTML = matrixHTML;
         }
 
         async function saveCMMSData() {
             const btn = document.getElementById('save-btn');
             const cat = document.getElementById('f-category').value;
-            
-            let finalParts = "";
-            let finalAction = "";
+            let finalParts = ""; let finalAction = "";
 
             if (cat === "Preventive Maintenance (PM)") {
                 const checkboxes = document.querySelectorAll('#pm-tasks-list input[type="checkbox"]');
-                let total = checkboxes.length;
-                let checked = 0;
+                let total = checkboxes.length; let checked = 0;
                 checkboxes.forEach(cb => { if(cb.checked) checked++; });
                 
-                const oil = document.getElementById('f-pm-oil').value;
-                const wearParts = document.getElementById('f-pm-parts').value;
-                
+                const oil = document.getElementById('f-pm-oil').value; const wearParts = document.getElementById('f-pm-parts').value;
                 finalParts = wearParts || "No parts replaced";
                 if (oil) finalParts += ` | Oil/Grease: ${oil}`;
-                
                 finalAction = `PM Executed (${checked}/${total} tasks checked).`;
             } else {
                 finalParts = document.getElementById('f-parts').value || "None";
@@ -448,35 +432,238 @@
             }
 
             const entry = {
-                date: document.getElementById('f-date').value,
-                shift: document.getElementById('f-shift').value,
-                asset: document.getElementById('f-asset').value,
-                category: cat,
-                time_lost: parseInt(document.getElementById('f-time').value) || 0,
-                status: document.getElementById('f-status').value,
-                parts_replaced: finalParts,
-                action_taken: finalAction,
-                created_by: MASTER_ADMIN_EMAIL
+                date: document.getElementById('f-date').value, shift: document.getElementById('f-shift').value,
+                asset: document.getElementById('f-asset').value, category: cat,
+                time_lost: parseInt(document.getElementById('f-time').value) || 0, status: document.getElementById('f-status').value,
+                parts_replaced: finalParts, action_taken: finalAction, created_by: MASTER_ADMIN_EMAIL
             };
 
             btn.innerText = "SAVING...";
-
             const { error } = await sb.from('cmms_logs').insert([entry]);
             if(!error) { 
                 fetchCMMSData(); 
-                document.getElementById('f-time').value = ''; 
-                document.getElementById('f-parts').value = ''; 
-                document.getElementById('f-action').value = '';
-                document.getElementById('f-pm-oil').value = '';
-                document.getElementById('f-pm-parts').value = '';
+                document.getElementById('f-time').value = ''; document.getElementById('f-parts').value = ''; document.getElementById('f-action').value = ''; document.getElementById('f-pm-oil').value = ''; document.getElementById('f-pm-parts').value = '';
                 document.querySelectorAll('#pm-tasks-list input[type="checkbox"]').forEach(cb => cb.checked = false);
                 btn.innerText = "💾 SAVE TICKET TO MAINTENANCE LOG";
-            } else { 
-                alert("Database Error: " + error.message); 
-                btn.innerText = "💾 SAVE TICKET TO MAINTENANCE LOG";
+            } else { alert("Database Error: " + error.message); btn.innerText = "💾 SAVE TICKET TO MAINTENANCE LOG"; }
+        }
+
+        // ==========================================
+        // V25.1 ISO AUDIT & CMMS EDIT ENGINE
+        // ==========================================
+        function openEditModal(id) {
+            const log = rawData.find(r => r.id === id); if(!log) return;
+            document.getElementById('edit-id').value = id; 
+            document.getElementById('edit-reason').value = ''; 
+            document.getElementById('edit-time').value = log.time_lost || 0; 
+            document.getElementById('edit-status').value = log.status;
+            document.getElementById('edit-action').value = log.action_taken; 
+            document.getElementById('edit-parts').value = log.parts_replaced;
+            document.getElementById('edit-modal').style.display = 'block'; document.getElementById('main-overlay').style.display = 'block';
+        }
+
+        async function submitEdit() {
+            const id = document.getElementById('edit-id').value;
+            const reason = document.getElementById('edit-reason').value.trim();
+            if(!reason) { alert("🛑 ISO COMPLIANCE BLOCK: You must state the reason for altering this official record."); return; }
+
+            const log = rawData.find(r => r.id == id);
+            const updates = { 
+                time_lost: parseInt(document.getElementById('edit-time').value)||0, status: document.getElementById('edit-status').value,
+                action_taken: document.getElementById('edit-action').value, parts_replaced: document.getElementById('edit-parts').value
+            };
+
+            try {
+                const auditEntry = {
+                    action: 'UPDATE_CMMS', record_id: id, machine: log.asset,
+                    old_value: `Status: ${log.status}, Time: ${log.time_lost}m, Action: ${log.action_taken}`,
+                    new_value: `Status: ${updates.status}, Time: ${updates.time_lost}m, Action: ${updates.action_taken}`,
+                    reason: reason, changed_by: currentUser || 'Admin'
+                };
+                await sb.from('audit_logs').insert([auditEntry]);
+                const { error } = await sb.from('cmms_logs').update(updates).eq('id', id);
+                if(!error) { closeModals(); await fetchCMMSData(); } else { alert("Database locked by RLS."); }
+            } catch(e) { alert("Audit system error. Action aborted."); }
+        }
+
+        async function deleteLog(id) { 
+            const reason = prompt("🛑 ISO COMPLIANCE CHECK: State reason for permanent deletion:");
+            if(!reason) { alert("Deletion cancelled. A valid reason is strictly required."); return; }
+            const log = rawData.find(r => r.id == id);
+            try {
+                const auditEntry = {
+                    action: 'DELETE_CMMS', record_id: id, machine: log.asset,
+                    old_value: `Date: ${log.date}, Category: ${log.category}, Status: ${log.status}`,
+                    new_value: `DELETED`, reason: reason, changed_by: currentUser || 'Admin'
+                };
+                await sb.from('audit_logs').insert([auditEntry]);
+                const { error } = await sb.from('cmms_logs').delete().eq('id', id); 
+                if(!error) fetchCMMSData(); 
+            } catch(e) { alert("Audit system error."); }
+        }
+
+        async function openAuditLedger() {
+            document.getElementById('system-menu').classList.remove('active');
+            document.getElementById('main-overlay').style.display = 'block';
+            document.getElementById('audit-modal').style.display = 'block';
+            document.getElementById('audit-content').innerHTML = "Fetching secure records...";
+            try {
+                const { data, error } = await sb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(100);
+                if(error) throw error;
+                if(data && data.length > 0) {
+                    document.getElementById('audit-content').innerHTML = data.map(l => {
+                        let color = l.action.includes('DELETE') ? 'var(--danger)' : '#8b5cf6';
+                        return `
+                        <div class="audit-record" style="border-left-color: ${color}">
+                            <div><span style="color:var(--text-dim);">${new Date(l.created_at).toLocaleString()}</span> | <b>[${l.action}]</b> on ${l.machine}</div>
+                            <div style="margin-top:5px; color:var(--text);">👤 <b>User:</b> ${l.changed_by}</div>
+                            <div style="margin-top:2px; color:var(--text);">📝 <b>Reason:</b> <i>"${l.reason}"</i></div>
+                            <div style="margin-top:2px; color:var(--text-dim);">⏪ <b>From:</b> ${l.old_value}</div>
+                            <div style="margin-top:2px; color:var(--text-dim);">⏩ <b>To:</b> ${l.new_value}</div>
+                        </div>`;
+                    }).join('');
+                } else { document.getElementById('audit-content').innerHTML = "No audit records found."; }
+            } catch(e) { document.getElementById('audit-content').innerHTML = `<span style="color:var(--danger)">Error connecting to Audit Ledger.</span>`; }
+        }
+
+        // ==========================================
+        // V25.1 AI REPORT MAKER (MAINTENANCE EDITION)
+        // ==========================================
+        function generateSmartReportText() {
+            if(rawData.length === 0) return "No maintenance data found.";
+            
+            const today = new Date();
+            const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const thisMonthData = rawData.filter(r => r.date.startsWith(currentMonth));
+
+            let tickets = rawData.filter(r => !r.category.includes('Preventive')).length;
+            let mins = thisMonthData.reduce((s,r) => s + (r.time_lost||0), 0);
+            let open = rawData.filter(r => r.status === 'Open').length;
+            let pms = thisMonthData.filter(r => r.category.includes('Preventive')).length;
+
+            let machineBreakdowns = {};
+            rawData.filter(r => !r.category.includes('Preventive')).forEach(r => {
+                machineBreakdowns[r.asset] = (machineBreakdowns[r.asset] || 0) + 1;
+            });
+            let worstMachine = "None"; let worstCount = 0;
+            for(let m in machineBreakdowns) { if(machineBreakdowns[m] > worstCount) { worstCount = machineBreakdowns[m]; worstMachine = m; } }
+
+            let text = `SUBJECT: RCC CMMS Maintenance Report - ${currentMonth}\n\n`;
+            text += `Dear Management Team,\n\n`;
+            text += `Please find the automated Maintenance & Reliability analysis below.\n\n`;
+            text += `🔧 1. EXECUTIVE SUMMARY\n--------------------------------------------------\n`;
+            text += `• Total Breakdown Tickets Logged: ${tickets}\n`;
+            text += `• Maintenance Downtime (This Month): ${mins} minutes\n`;
+            text += `• Active/Open Tickets: ${open}\n`;
+            text += `• Preventive Maintenance (PMs) Completed: ${pms}\n\n`;
+
+            text += `🔬 2. DATA ANALYST INSIGHTS\n--------------------------------------------------\n`;
+            if(worstMachine !== "None") {
+                text += `Reliability Bottleneck: ${worstMachine} has the highest failure rate with ${worstCount} breakdown tickets logged.\n`;
+            } else { text += `Machine reliability is currently stable with no repeated breakdown trends.\n`; }
+            
+            if(open > 0) { text += `Critical Warning: There are ${open} OPEN work orders waiting for parts or execution. These pose an imminent risk to production efficiency.\n\n`; }
+            else { text += `All logged work orders have been successfully resolved or are in progress.\n\n`; }
+
+            text += `🎯 3. STRATEGIC RECOMMENDATIONS\n--------------------------------------------------\n`;
+            if(worstMachine !== "None") { text += `• Schedule a deep-dive mechanical audit on ${worstMachine} to identify the root cause of repeated failures.\n`; }
+            if(open > 0) { text += `• Expedite supply chain procurement for the parts required to close the ${open} open tickets.\n`; }
+            text += `• Ensure all 7 production lines complete their monthly PM checklists to sustain OEE targets.\n\n`;
+            
+            text += `Thank you,\nRCC CMMS Automated Engine\n`;
+            return text;
+        }
+
+        function generateSmartReport() {
+            if(rawData.length === 0) { alert("No data found."); return; }
+            document.getElementById('report-content').innerText = generateSmartReportText();
+            document.getElementById('system-menu').classList.remove('active'); document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
+        }
+
+        function sendEmailNow() {
+            const emails = document.getElementById('email-list').value;
+            if(!emails) { alert("Please enter recipient emails."); return; }
+            const subject = encodeURIComponent(`RCC CMMS Maintenance Report`);
+            const body = encodeURIComponent(generateSmartReportText());
+            window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+        }
+
+        function copyReportNow() {
+            navigator.clipboard.writeText(generateSmartReportText()).then(() => { alert("Report copied to clipboard!"); });
+        }
+
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        function saveEmailSettings() {
+            autoEmailConfig.emails = document.getElementById('email-list').value;
+            autoEmailConfig.dayTrigger = document.getElementById('email-time-day').value;
+            autoEmailConfig.nightTrigger = document.getElementById('email-time-night').value;
+            autoEmailConfig.enabled = document.getElementById('email-toggle').checked;
+            localStorage.setItem('rcc_email_config', JSON.stringify(autoEmailConfig));
+            alert("Settings Saved!");
+        }
+
+        function loadEmailSettings() {
+            const saved = localStorage.getItem('rcc_email_config');
+            if(saved) {
+                autoEmailConfig = JSON.parse(saved);
+                document.getElementById('email-list').value = autoEmailConfig.emails || '';
+                document.getElementById('email-time-day').value = autoEmailConfig.dayTrigger || '18:05';
+                document.getElementById('email-time-night').value = autoEmailConfig.nightTrigger || '06:05';
+                document.getElementById('email-toggle').checked = autoEmailConfig.enabled || false;
             }
         }
 
+        function checkAutomations() {
+            if(!isEngineer || !autoEmailConfig.enabled) return;
+            const now = new Date();
+            const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit' });
+            const todayStr = now.toISOString().split('T')[0];
+
+            if (autoEmailConfig.lastSent === `${todayStr}-${currentTime}`) return;
+            if (currentTime === autoEmailConfig.dayTrigger || currentTime === autoEmailConfig.nightTrigger) {
+                sendEmailNow(); 
+                autoEmailConfig.lastSent = `${todayStr}-${currentTime}`;
+                localStorage.setItem('rcc_email_config', JSON.stringify(autoEmailConfig));
+            }
+        }
+
+        async function logoutSecurely() {
+            await sb.auth.signOut();
+            localStorage.removeItem('rcc_user'); localStorage.removeItem('rcc_role');
+            window.location.href = 'index.html';
+        }
+
+        function saveNotes() { localStorage.setItem('cmms_notes', document.getElementById('cmms-notepad').value); }
+        function loadNotes() { document.getElementById('cmms-notepad').value = localStorage.getItem('cmms_notes') || ""; }
+
+        async function fetchAccessLogs() {
+            const display = document.getElementById('access-log-display'); 
+            display.innerHTML = "<span style='color:var(--accent);'>↻ Pinging Supabase...</span>";
+            try {
+                const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
+                if(data) { display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px;">${l.user_name}</b></div>`).join(''); } 
+            } catch(err) { display.innerHTML = `<span style='color:var(--danger);'>DB ERROR</span>`; }
+        }
+
+        function exportExcel() {
+            if(rawData.length === 0) return alert("No data to export.");
+            const wsData = rawData.map(r => ({ "Date": r.date, "Shift": r.shift, "Asset": r.asset, "Category": r.category, "Time Lost (min)": r.time_lost, "Action Taken": r.action_taken, "Parts Replaced": r.parts_replaced, "Status": r.status }));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "CMMS Logs");
+            XLSX.writeFile(wb, `RCC_CMMS_Report.xlsx`);
+        }
+
+        function toggleMenu() { 
+            const menu = document.getElementById('system-menu'); menu.classList.toggle('active'); 
+            document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
+            if(menu.classList.contains('active')) fetchAccessLogs();
+        }
+        
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+        function downloadReport() { const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([document.getElementById('report-content').innerText], { type: 'text/plain' })); a.download = `RCC_CMMS_Summary.txt`; a.click(); }
+        
         window.onload = checkSession;
     </script>
 </body>
