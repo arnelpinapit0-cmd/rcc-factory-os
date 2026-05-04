@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v23.4 Strict Routing</title>
+    <title>RCC Bodyline OS | v25.0 Predictive Factory</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -59,6 +61,12 @@
         @media (max-width: 1100px) { .chart-row { grid-template-columns: 1fr; } }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
+        /* 3D TWIN CONTAINER */
+        #twin-container { display: none; height: 500px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 20px; position: relative; background: #0f172a;}
+        .twin-overlay { position: absolute; top: 15px; left: 15px; color: white; font-family: monospace; z-index: 10; pointer-events: none;}
+        .twin-overlay h3 { margin: 0; font-size: 18px; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .twin-overlay p { margin: 5px 0 0 0; font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+
         .admin-form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
         .downtime-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; background: rgba(37, 99, 235, 0.05); border: 1px dashed var(--accent); border-radius: 8px; margin-bottom: 10px;}
         .downtime-grid div { display: flex; flex-direction: column; }
@@ -79,21 +87,20 @@
         .icon-btn:hover { opacity: 1; transform: scale(1.2); }
 
         .chat-container { height: 250px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
-        .chat-msg { padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); position: relative; transition: 0.2s;}
+        .chat-msg { padding: 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); position: relative; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
         .chat-msg b { color: var(--accent); display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; }
         .del-msg-btn { position: absolute; right: 5px; top: 5px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; }
+
+        /* THE ORACLE AI MESSAGE STYLING */
+        .chat-msg.oracle-msg { background: rgba(37, 99, 235, 0.05); border-left: 4px solid var(--accent); }
+        .chat-msg.oracle-msg b { color: var(--accent); font-weight: 800; display: flex; align-items: center; gap: 5px;}
+        .chat-msg.oracle-msg b::before { content: '🤖'; font-size: 14px; }
 
         .fab { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: white; font-size: 24px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); transition: 0.3s; }
         .fab:hover { transform: rotate(90deg); }
         #system-menu { position: fixed; top: 0; right: -420px; width: 400px; height: 100%; background: var(--surface); border-left: 1px solid var(--border); z-index: 2001; transition: 0.4s; padding: 30px; box-sizing: border-box; visibility: hidden; overflow-y: auto; box-shadow: -5px 0 25px rgba(0,0,0,0.2);}
         #system-menu.active { right: 0; visibility: visible; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; }
-
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 15px 40px rgba(0,0,0,0.5); width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto;}
-        .modal-content-box { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 15px; border-radius: 8px; margin: 15px 0; max-height: 400px; overflow-y: auto; font-size: 13px; line-height: 1.6; border: 1px solid var(--border); white-space: pre-wrap;}
-        
-        .audit-record { background: var(--bg); border-left: 4px solid #8b5cf6; padding: 12px; margin-bottom: 10px; font-family: monospace; font-size: 11px; border-radius: 4px; border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        .audit-record b { color: #8b5cf6; }
     </style>
 </head>
 <body>
@@ -151,27 +158,45 @@
     </div>
 
     <div class="main-content">
-        <div class="kpi-grid">
-            <div class="kpi-card"><small>📦 Total Yield</small><div id="kpi-yield" class="val">0</div><div id="var-yield" class="variance">--</div></div>
-            <div class="kpi-card"><small>🎯 Total Target</small><div id="kpi-target" class="val">0</div><div id="var-target" class="variance">--</div></div>
-            <div class="kpi-card"><small>⚡ Avg Efficiency</small><div id="kpi-eff" class="val">0%</div><div id="var-eff" class="variance">--</div></div>
-            <div class="kpi-card"><small>⚠️ Total Downtime</small><div id="kpi-down" class="val">0 m</div><div id="var-down" class="variance">--</div></div>
-            <div class="kpi-card"><small>🗑️ Total QC Scrap</small><div id="kpi-scrap" class="val" style="color:var(--danger)">0</div><div id="var-scrap" class="variance">--</div></div>
+        
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+            <button class="btn" style="background:var(--accent); color:white; font-size:11px;" onclick="toggleTwin()">🏭 TOGGLE 3D FACTORY MAP</button>
         </div>
 
-        <div class="chart-row">
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Historical Performance Trend</h3><div style="height: 220px;"><canvas id="prodChart"></canvas></div></div>
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Downtime Root Cause (Minutes Lost)</h3><div style="height: 220px;"><canvas id="utilChart"></canvas></div></div>
-        </div>
+        <div id="twin-container">
+            <div class="twin-overlay">
+                <h3>DIGITAL TWIN ENGINE</h3>
+                <p>Live Efficiency & Status Mapping (Drag to Rotate)</p>
+            </div>
+            </div>
 
-        <div class="chart-row">
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Day Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartDay"></canvas></div></div>
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Night Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartNight"></canvas></div></div>
-        </div>
+        <div id="traditional-charts">
+            <div class="kpi-grid">
+                <div class="kpi-card"><small>📦 Total Yield</small><div id="kpi-yield" class="val">0</div><div id="var-yield" class="variance">--</div></div>
+                <div class="kpi-card"><small>🎯 Total Target</small><div id="kpi-target" class="val">0</div><div id="var-target" class="variance">--</div></div>
+                <div class="kpi-card"><small>⚡ Avg Efficiency</small><div id="kpi-eff" class="val">0%</div><div id="var-eff" class="variance">--</div></div>
+                <div class="kpi-card"><small>⚠️ Total Downtime</small><div id="kpi-down" class="val">0 m</div><div id="var-down" class="variance">--</div></div>
+                <div class="kpi-card"><small>🗑️ Total QC Scrap</small><div id="kpi-scrap" class="val" style="color:var(--danger)">0</div><div id="var-scrap" class="variance">--</div></div>
+            </div>
 
-        <div class="chart-row">
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Shift Output Comparison</h3><div style="height: 180px;"><canvas id="shiftCompChart"></canvas></div></div>
-            <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--danger);">QC Scrap Pareto Matrix</h3><div style="height: 180px;"><canvas id="qcChart"></canvas></div></div>
+            <div class="chart-row">
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Historical Performance Trend</h3><div style="height: 220px;"><canvas id="prodChart"></canvas></div></div>
+                <div class="panel">
+                    <h3 style="margin:0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Downtime Root Cause (Minutes Lost)</h3>
+                    <p style="margin:0 0 10px 0; font-size:9px; color:var(--accent);">*Click a slice to filter log table</p>
+                    <div style="height: 200px;"><canvas id="utilChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Day Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartDay"></canvas></div></div>
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Night Shift Efficiency</h3><div style="height: 180px;"><canvas id="effChartNight"></canvas></div></div>
+            </div>
+
+            <div class="chart-row">
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Shift Output Comparison</h3><div style="height: 180px;"><canvas id="shiftCompChart"></canvas></div></div>
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--danger);">QC Scrap Pareto Matrix</h3><div style="height: 180px;"><canvas id="qcChart"></canvas></div></div>
+            </div>
         </div>
 
         <div class="chart-row admin-only" id="admin-form-container">
@@ -235,7 +260,10 @@
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
             <div class="panel" id="log-table-container">
-                <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Filtered Production Log</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <h3 style="margin:0; font-size:13px; text-transform:uppercase; color:var(--text-dim);">🗄️ Filtered Production Log</h3>
+                    <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); padding:4px 8px; font-size:10px;" onclick="renderTable()">Reset Filters</button>
+                </div>
                 <div style="overflow-y:auto; height: 400px;">
                     <table id="log-table">
                         <thead><tr><th>Date</th><th>Shift</th><th>Asset</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Total Down</th><th>Scrap</th><th class="admin-only">Action</th></tr></thead>
@@ -245,10 +273,13 @@
             </div>
 
             <div class="panel chat-panel">
-                <h3 style="margin:0 0 15px 0; font-size:13px; text-transform:uppercase; color: var(--accent);">💬 Production Comments</h3>
+                <h3 style="margin:0 0 5px 0; font-size:13px; text-transform:uppercase; color: var(--accent);">💬 AI Oracle & Comments</h3>
+                <p style="margin:0 0 10px 0; font-size:10px; color:var(--text-dim);">Type <b style="color:var(--accent)">@Oracle</b> to ask the AI Diagnostic Lead a question.</p>
+                
                 <div id="chat-box" class="chat-container"></div>
+                
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="chat-input" placeholder="Type message..." style="margin:0;" onkeypress="if(event.key === 'Enter') sendComment()">
+                    <input type="text" id="chat-input" placeholder="Type message or @Oracle..." style="margin:0;" onkeypress="if(event.key === 'Enter') sendComment()">
                     <button class="btn btn-primary" onclick="sendComment()" style="width: auto; padding: 0 20px;">SEND</button>
                 </div>
             </div>
@@ -259,119 +290,38 @@
     <div class="menu-overlay" onclick="toggleMenu()" id="main-overlay"></div>
     <div id="system-menu">
         <h2 style="font-weight: 800; color: var(--text); margin-top: 0;">RCC CONTROLS</h2>
-        
-        <button class="btn" style="width:100%; margin-bottom:20px; background: var(--danger); color: white;" onclick="logoutSecurely()">🔒 SECURE LOGOUT</button>
         <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="toggleTheme()">🌓 TOGGLE DARK MODE</button>
         
         <div class="admin-only" style="margin-top: 20px;">
-            <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 10px;">Admin Tools</h4>
-            
-            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 2px solid #8b5cf6; color: #8b5cf6;" onclick="openAuditLedger()">🛡️ ISO AUDIT LEDGER</button>
             <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="exportExcel()">🟩 EXCEL (CURRENT VIEW)</button>
-            <button class="btn" style="width:100%; margin-bottom:10px; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="window.print()">🖨️ PDF (PRINT VIEW)</button>
-            <button class="btn btn-primary" style="width:100%; margin-bottom:20px;" onclick="generateSmartReport()">📋 AI DATA ANALYST REPORT</button>
-            
-            <h4 style="color:var(--accent); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">✉️ Report Dispatcher</h4>
-            <div style="background:var(--bg); padding:15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px;">
-                <label style="font-size:9px; font-weight:bold; color:var(--text-dim);">SEND TO (COMMA SEPARATED)</label>
-                <input type="text" id="email-list" placeholder="manager@rcc.com, ceo@rcc.com" style="margin-bottom:10px; padding:10px; font-size:11px;">
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <div style="flex:1;"><label style="font-size:9px; color:var(--text-dim);">DAY SHIFT AUTO</label><input type="time" id="email-time-day" style="padding:10px; font-size:11px;"></div>
-                    <div style="flex:1;"><label style="font-size:9px; color:var(--text-dim);">NIGHT SHIFT AUTO</label><input type="time" id="email-time-night" style="padding:10px; font-size:11px;"></div>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px; padding:5px 0; margin-bottom: 10px;">
-                    <input type="checkbox" id="email-toggle" style="width:16px; height:16px; margin:0;"> 
-                    <label style="font-size:11px; font-weight:bold; cursor:pointer;" for="email-toggle">Enable Auto-Trigger</label>
-                </div>
-                <button class="btn btn-primary" onclick="saveEmailSettings()" style="margin-bottom:5px; padding:10px; font-size:10px; background:var(--accent);">💾 SAVE CONFIGURATION</button>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                    <button class="btn" onclick="sendEmailNow()" style="background:var(--success); color:white; padding:10px; font-size:10px;">📧 DRAFT EMAIL NOW</button>
-                    <button class="btn" onclick="copyReportNow()" style="background:var(--warning); color:white; padding:10px; font-size:10px;">📋 COPY TO CLIPBOARD</button>
-                </div>
-            </div>
         </div>
         
         <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">📝 Production Notepad</h4>
         <textarea id="prod-notepad" placeholder="Shift Reminders (Auto-Saves)..." oninput="saveNotes()" style="height: 100px; margin-bottom: 20px;"></textarea>
 
-        <div id="access-log-section" style="margin-top: 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-                <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin:0;">🔒 Access Logs</h4>
-                <button onclick="fetchAccessLogs()" style="background:var(--accent); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:9px; cursor:pointer; font-weight:bold;">↻ REFRESH</button>
-            </div>
-            <div id="access-log-display" style="font-family:monospace; font-size:10px; height:120px; overflow-y:auto; background:var(--bg); padding:10px; border-radius: 6px; border: 1px solid var(--border);"></div>
-        </div>
-
         <button class="btn" style="width:100%; margin-top:20px; background: var(--border); color: var(--text);" onclick="toggleMenu()">CLOSE MENU</button>
-    </div>
-
-    <div id="report-modal" class="modal">
-        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">🤖 AI ANALYST SUMMARY</h2>
-        <div id="report-content" class="modal-content-box" style="white-space: pre-wrap;">Analyzing specific timeframe...</div>
-        <button class="btn btn-primary" onclick="downloadReport()" style="margin-bottom: 10px;">💾 DOWNLOAD REPORT</button>
-        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text);" onclick="closeModals()">CLOSE</button>
-    </div>
-
-    <div id="audit-modal" class="modal">
-        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 2px solid #8b5cf6; padding-bottom: 10px; color: var(--text);">🛡️ IMMUTABLE AUDIT LEDGER</h2>
-        <p style="font-size:11px; color:var(--text-dim); margin-top:-5px;">Official ISO 9001 Compliance Track. Records cannot be deleted.</p>
-        <div id="audit-content" style="max-height: 400px; overflow-y: auto; padding-right:10px;">Loading records...</div>
-        <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text); margin-top:15px;" onclick="closeModals()">CLOSE</button>
-    </div>
-
-    <div id="edit-modal" class="modal">
-        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">✏️ EDIT PRODUCTION RECORD</h2>
-        <input type="hidden" id="edit-id">
-        
-        <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">⚠️ ISO COMPLIANCE: REASON REQUIRED</label>
-        <textarea id="edit-reason" rows="2" placeholder="Strictly detail why you are altering this official record..." style="border: 2px solid var(--danger); margin-bottom:15px;"></textarea>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-            <div><label style="font-size:10px; color:var(--text-dim);">TARGET</label><input type="number" id="edit-target"></div>
-            <div><label style="font-size:10px; color:var(--text-dim);">ACTUAL</label><input type="number" id="edit-actual"></div>
-        </div>
-        <label style="font-size:11px; font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">EDIT DOWNTIME (MINUTES)</label>
-        <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
-            <div><label style="font-size:9px;">MECH</label><input type="number" id="edit-mech"></div>
-            <div><label style="font-size:9px;">ELEC</label><input type="number" id="edit-elec"></div>
-            <div><label style="font-size:9px;">MATL</label><input type="number" id="edit-mat"></div>
-            <div><label style="font-size:9px;">QC</label><input type="number" id="edit-qc"></div>
-            <div><label style="font-size:9px;">PACK</label><input type="number" id="edit-pack"></div>
-        </div>
-        <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">EDIT QC SCRAP (CANS)</label>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
-            <div><label style="font-size:9px;">WELDS</label><input type="number" id="edit-scrap-weld"></div>
-            <div><label style="font-size:9px;">SCRATCH</label><input type="number" id="edit-scrap-scratch"></div>
-            <div><label style="font-size:9px;">FLANGE</label><input type="number" id="edit-scrap-flange"></div>
-        </div>
-        
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button class="btn btn-primary" onclick="submitEdit()">💾 SIGN & SAVE CHANGES</button>
-            <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); width:100%;" onclick="closeModals()">CANCEL</button>
-        </div>
     </div>
 
     <button id="operator-logout-btn" style="display:none; position: fixed; bottom: 20px; left: 20px; background: var(--danger); border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; z-index: 1000;" onclick="logoutSecurely()">🚪 SECURE LOGOUT</button>
 
     <script>
         // =========================================================================
-        // 🔒 THE MASTER KEY - CHANGE THIS TO YOUR ACTUAL EMAIL ADDRESS
+        // 🔒 THE MASTER KEY
         // =========================================================================
         const MASTER_ADMIN_EMAIL = "Engr.Pinapit@rcc.com"; 
-        // =========================================================================
 
         const SB_URL = "https://ywjnbslxdssyriokcdws.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3am5ic2x4ZHNzeXJpb2tjZHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDg1MDUsImV4cCI6MjA5MTIyNDUwNX0.sNFCBZoSwZS0b5eU6iBmLeTt5ru7dP8G2GYJ9hrxAFg";
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
-        let rawData = []; let filteredData = []; let previousData = [];
+        let rawData = []; let filteredData = []; 
         let isEngineer = false; let currentUser = "GUEST"; let charts = {}; let currentMode = 'daily';
-        
-        let autoEmailConfig = { enabled: false, emails: '', dayTrigger: '18:05', nightTrigger: '06:05', lastSent: null };
+        let isTwinVisible = false;
 
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
 
+        // --- CORE SYSTEM LOAD ---
         function applyRBAC(userEmail) {
             currentUser = userEmail;
             if (userEmail.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
@@ -392,108 +342,51 @@
                     currentUser = localStorage.getItem('rcc_user') || "Anonymous Viewer";
                     isEngineer = false;
                     unlockSystem();
-                } else {
-                    // Not logged in at all, bounce to Hub
-                    window.location.href = 'index.html';
-                }
+                } else { window.location.href = 'index.html'; }
             }
         }
 
         async function logoutSecurely() {
             if(confirm("Are you sure you want to securely log out?")) {
                 await sb.auth.signOut();
-                localStorage.removeItem('rcc_user');
-                localStorage.removeItem('rcc_role');
+                localStorage.removeItem('rcc_user'); localStorage.removeItem('rcc_role');
                 window.location.href = 'index.html';
             }
         }
 
         function unlockSystem() {
-            try {
-                document.body.style.display = 'block'; 
-                
-                const safeUser = currentUser || "Operator";
-                const displayUser = safeUser.includes('@') ? safeUser.split('@')[0] : safeUser;
-                
-                document.getElementById('user-display').innerText = displayUser;
-                document.getElementById('user-avatar').innerText = displayUser.charAt(0).toUpperCase();
-                
-                // Hide admin tools if not the master
-                document.querySelectorAll('.admin-only').forEach(el => { el.style.display = isEngineer ? 'block' : 'none'; });
-                
-                // Show Hub link ONLY if Admin. Give Operator a manual logout button instead.
-                if(isEngineer) {
-                    document.getElementById('hub-link-container').style.display = 'block';
-                } else {
-                    document.getElementById('operator-logout-btn').style.display = 'block';
-                }
-                
-                setupRealtime(); initCharts(); fetchData(); fetchComments(); loadNotes(); loadEmailSettings();
-                setInterval(fetchComments, 3000);
-                setMode('daily', document.querySelector('.tab-btn')); 
-            } catch (e) { console.error("Critical error unlocking system:", e); }
+            document.body.style.display = 'block'; 
+            const displayUser = currentUser.includes('@') ? currentUser.split('@')[0] : currentUser;
+            
+            document.getElementById('user-display').innerText = displayUser;
+            document.getElementById('user-avatar').innerText = displayUser.charAt(0).toUpperCase();
+            
+            document.querySelectorAll('.admin-only').forEach(el => { el.style.display = isEngineer ? 'block' : 'none'; });
+            
+            if(isEngineer) document.getElementById('hub-link-container').style.display = 'block';
+            else document.getElementById('operator-logout-btn').style.display = 'block';
+            
+            setupRealtime(); initCharts(); init3DTwin(); fetchData(); fetchComments(); loadNotes(); 
+            setInterval(fetchComments, 3000);
+            setMode('daily', document.querySelector('.tab-btn')); 
         }
 
-        function toggleAIQC() {
-            const isEnabled = document.getElementById('ai-qc-toggle').checked;
-            const inputs = ['f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange'];
-            inputs.forEach(id => {
-                const el = document.getElementById(id); el.disabled = isEnabled;
-                if(isEnabled) { el.style.backgroundColor = "rgba(16, 185, 129, 0.1)"; el.value = ""; el.placeholder = "AI CONTROLLED"; } 
-                else { el.style.backgroundColor = "var(--bg)"; el.placeholder = "0"; }
-            });
-            if(isEnabled) alert("Edge AI Vision Mode Enabled. Camera feeds are now monitoring the line. Manual QC entry is locked.");
-        }
-
-        function saveEmailSettings() {
-            autoEmailConfig.emails = document.getElementById('email-list').value;
-            autoEmailConfig.dayTrigger = document.getElementById('email-time-day').value;
-            autoEmailConfig.nightTrigger = document.getElementById('email-time-night').value;
-            autoEmailConfig.enabled = document.getElementById('email-toggle').checked;
-            localStorage.setItem('rcc_email_config', JSON.stringify(autoEmailConfig));
-            alert("Automated Report Settings Saved!");
-        }
-
-        function loadEmailSettings() {
-            const saved = localStorage.getItem('rcc_email_config');
-            if(saved) {
-                autoEmailConfig = JSON.parse(saved);
-                document.getElementById('email-list').value = autoEmailConfig.emails || '';
-                document.getElementById('email-time-day').value = autoEmailConfig.dayTrigger || '18:05';
-                document.getElementById('email-time-night').value = autoEmailConfig.nightTrigger || '06:05';
-                document.getElementById('email-toggle').checked = autoEmailConfig.enabled || false;
-            }
-        }
-
-        function checkAutomations() {
-            if(!isEngineer || !autoEmailConfig.enabled) return;
-            const now = new Date();
-            const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit' });
-            const todayStr = now.toISOString().split('T')[0];
-
-            if (autoEmailConfig.lastSent === `${todayStr}-${currentTime}`) return;
-
-            if (currentTime === autoEmailConfig.dayTrigger || currentTime === autoEmailConfig.nightTrigger) {
-                console.log(`%c 📧 EDGE FUNCTION TRIGGERED `, 'background: #2563eb; color: white; padding: 5px; font-weight:bold;');
-                sendEmailNow(); 
-                autoEmailConfig.lastSent = `${todayStr}-${currentTime}`;
-                localStorage.setItem('rcc_email_config', JSON.stringify(autoEmailConfig));
-            }
-        }
-
+        // --- DATA ENGINE ---
         function setupRealtime() {
             const dot = document.getElementById('cloud-dot'); const text = document.getElementById('cloud-text');
             try {
-                sb.channel('global-sync')
-                  .on('postgres_changes', { event: '*', schema: 'public', table: 'production_logs' }, () => fetchData())
+                sb.channel('global-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'production_logs' }, () => fetchData())
                   .subscribe((status) => {
                       if(status === 'SUBSCRIBED') { dot.className = "status-dot dot-online"; text.innerText = "LIVE SYNC ACTIVE"; } 
-                      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { dot.className = "status-dot dot-offline"; text.innerText = "SYNC ERROR"; }
+                      else { dot.className = "status-dot dot-offline"; text.innerText = "SYNC ERROR"; }
                   });
             } catch (e) { dot.className = "status-dot dot-offline"; text.innerText = "SYNC OFFLINE"; }
         }
 
-        async function fetchData() { const { data } = await sb.from('production_logs').select('*').order('date', {ascending:false}); if(data) { rawData = data; processData(); } }
+        async function fetchData() { 
+            const { data } = await sb.from('production_logs').select('*').order('date', {ascending:false}); 
+            if(data) { rawData = data; processData(); } 
+        }
 
         function setMode(mode, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); currentMode = mode;
@@ -508,24 +401,21 @@
 
         function calculateDatesAndProcess() {
             const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, '0'); const dd = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${yyyy}-${mm}-${dd}`; let start, end, prevStart, prevEnd;
+            const todayStr = `${yyyy}-${mm}-${dd}`; let start, end;
 
-            if(currentMode === 'daily') { start = end = todayStr; let yest = new Date(today); yest.setDate(yest.getDate() - 1); prevStart = prevEnd = yest.toISOString().split('T')[0]; } 
+            if(currentMode === 'daily') { start = end = todayStr; } 
             else if(currentMode === 'weekly') {
                 let day = today.getDay(); let diff = today.getDate() - day + (day === 0 ? -6 : 1); 
                 let mon = new Date(today.setDate(diff)); let sun = new Date(mon); sun.setDate(mon.getDate() + 6);
                 start = mon.toISOString().split('T')[0]; end = sun.toISOString().split('T')[0];
-                let pMon = new Date(mon); pMon.setDate(pMon.getDate() - 7); let pSun = new Date(sun); pSun.setDate(pSun.getDate() - 7);
-                prevStart = pMon.toISOString().split('T')[0]; prevEnd = pSun.toISOString().split('T')[0];
             }
             else if(currentMode === 'monthly') {
                 start = `${yyyy}-${mm}-01`; let lastDay = new Date(yyyy, today.getMonth() + 1, 0); end = `${yyyy}-${mm}-${lastDay.getDate()}`;
-                let prevMonth = today.getMonth() === 0 ? 12 : today.getMonth(); let prevYear = today.getMonth() === 0 ? yyyy - 1 : yyyy;
-                let pmm = String(prevMonth).padStart(2, '0'); prevStart = `${prevYear}-${pmm}-01`;
-                let prevLastDay = new Date(prevYear, prevMonth, 0); prevEnd = `${prevYear}-${pmm}-${prevLastDay.getDate()}`;
             }
-            else if(currentMode === 'yearly') { start = `${yyyy}-01-01`; end = `${yyyy}-12-31`; prevStart = `${yyyy-1}-01-01`; prevEnd = `${yyyy-1}-12-31`; }
-            filterAndRender(start, end, prevStart, prevEnd);
+            else if(currentMode === 'yearly') { start = `${yyyy}-01-01`; end = `${yyyy}-12-31`; }
+            
+            filteredData = rawData.filter(r => r && r.date && r.date >= start && r.date <= end);
+            updateAllVisuals();
         }
 
         function processData() {
@@ -540,212 +430,86 @@
             } else if (subMode === 'month') {
                 const monVal = document.getElementById('date-month').value; if(!monVal) return;
                 start = monVal + "-01"; let d = new Date(monVal.split('-')[0], monVal.split('-')[1], 0); end = monVal + "-" + d.getDate();
-            } filterAndRender(start, end, start, end); 
+            } 
+            filteredData = rawData.filter(r => r && r.date && r.date >= start && r.date <= end);
+            updateAllVisuals();
         }
 
         function getTotalDown(r) { return (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0); }
         function getTotalScrap(r) { return (r.defect_weld || 0) + (r.defect_scratch || 0) + (r.defect_flange || 0); }
 
-        function filterAndRender(start, end, pStart, pEnd) {
-            filteredData = rawData.filter(r => r && r.date && r.date >= start && r.date <= end);
-            previousData = pStart ? rawData.filter(r => r && r.date && r.date >= pStart && r.date <= pEnd) : [];
-            try { updateKPIs(); } catch (e) { console.error(e); }
-            try { renderTable(); } catch (e) { console.error(e); }
-            try { updateCharts(); } catch (e) { console.error(e); }
+        function updateAllVisuals() {
+            updateKPIs(); renderTable(); updateCharts(); update3DTwin();
         }
 
         function updateKPIs() {
-            const calc = (data) => {
-                const t = data.reduce((acc, r) => { 
-                    acc.a += (r.actual||0); acc.t += (r.target||0); 
-                    acc.d += getTotalDown(r); acc.s += getTotalScrap(r); 
-                    acc.run += (r.run || 480); 
-                    return acc; 
-                }, {a:0, t:0, d:0, s:0, run:0});
-                
-                const eff = t.t > 0 ? (t.a/t.t*100) : 0; 
-                let availability = t.run > 0 ? (t.run - t.d) / t.run : 0;
-                let performance = t.t > 0 ? t.a / t.t : 0; 
-                let quality = t.a > 0 ? Math.max(0, t.a - t.s) / t.a : 0;
-                let trueOEE = (availability * performance * quality) * 100;
-
-                return { yield: t.a, target: t.t, down: t.d, eff, scrap: t.s, oee: trueOEE };
-            };
+            const t = filteredData.reduce((acc, r) => { 
+                acc.a += (r.actual||0); acc.t += (r.target||0); acc.d += getTotalDown(r); acc.s += getTotalScrap(r); acc.run += (r.run || 480); return acc; 
+            }, {a:0, t:0, d:0, s:0, run:0});
             
-            const curr = calc(filteredData); const prev = calc(previousData);
+            const eff = t.t > 0 ? (t.a/t.t*100) : 0; 
+            let oee = ((t.run > 0 ? (t.run - t.d) / t.run : 0) * (t.t > 0 ? t.a / t.t : 0) * (t.a > 0 ? Math.max(0, t.a - t.s) / t.a : 0)) * 100;
 
-            document.getElementById('kpi-yield').innerText = curr.yield.toLocaleString();
-            document.getElementById('kpi-target').innerText = curr.target.toLocaleString();
-            document.getElementById('kpi-eff').innerText = curr.eff.toFixed(1) + "%";
-            document.getElementById('kpi-down').innerText = curr.down + " m";
-            document.getElementById('kpi-scrap').innerText = curr.scrap.toLocaleString();
-
-            const effEl = document.getElementById('kpi-eff');
-            effEl.innerHTML = `${curr.eff.toFixed(1)}% <span style="font-size:11px; background:var(--accent); color:white; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:8px; display:inline-block; font-weight:bold; letter-spacing:1px; box-shadow: 0 2px 5px rgba(37,99,235,0.3);">OEE: ${curr.oee.toFixed(1)}%</span>`;
-
-            const setVar = (id, c, p, isPct = false, reverse = false) => {
-                const el = document.getElementById(id); if(!el) return;
-                if (currentMode === 'custom' || !p || p === 0) { el.innerText = "--"; el.className = "variance"; return; }
-                const diff = isPct ? (c - p) : ((c - p) / p * 100); const sym = diff >= 0 ? "↑" : "↓";
-                el.innerText = `${sym} ${Math.abs(diff).toFixed(1)}${isPct?'':'%'}`;
-                let isGood = diff >= 0; if(reverse) isGood = diff <= 0; el.className = `variance ${isGood ? 'up' : 'down'}`;
-            };
-            setVar('var-yield', curr.yield, prev.yield); setVar('var-eff', curr.eff, prev.eff, true); setVar('var-down', curr.down, prev.down, false, true); setVar('var-scrap', curr.scrap, prev.scrap, false, true);
+            document.getElementById('kpi-yield').innerText = t.a.toLocaleString();
+            document.getElementById('kpi-target').innerText = t.t.toLocaleString();
+            document.getElementById('kpi-down').innerText = t.d + " m";
+            document.getElementById('kpi-scrap').innerText = t.s.toLocaleString();
+            document.getElementById('kpi-eff').innerHTML = `${eff.toFixed(1)}% <span style="font-size:11px; background:var(--accent); color:white; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:8px; display:inline-block; font-weight:bold; letter-spacing:1px; box-shadow: 0 2px 5px rgba(37,99,235,0.3);">OEE: ${oee.toFixed(1)}%</span>`;
         }
 
-        function renderTable() {
-            document.getElementById('log-body').innerHTML = filteredData.map(r => {
+        function renderTable(customData = null) {
+            const dataToRender = customData || filteredData;
+            document.getElementById('log-body').innerHTML = dataToRender.map(r => {
                 let safeShift = r.shift ? r.shift[0] : '-'; let safeLine = r.line || 'Unknown Asset';
-                let safeActual = r.actual || 0; let safeTarget = r.target || 0;
-                let safeEff = safeTarget > 0 ? (safeActual/safeTarget*100).toFixed(1) : '0.0';
-                let safeColor = (safeTarget > 0 && (safeActual/safeTarget*100) < 80) ? 'var(--danger)' : 'var(--success)';
+                let safeEff = r.target > 0 ? (r.actual/r.target*100).toFixed(1) : '0.0';
+                let safeColor = (r.target > 0 && (r.actual/r.target*100) < 80) ? 'var(--danger)' : 'var(--success)';
                 
                 return `<tr>
-                    <td>${r.date}</td><td>${safeShift}</td><td style="font-size:10px;"><b>${safeLine}</b></td><td>${safeActual}</td><td>${safeTarget}</td>
+                    <td>${r.date}</td><td>${safeShift}</td><td style="font-size:10px;"><b>${safeLine}</b></td><td>${r.actual}</td><td>${r.target}</td>
                     <td style="font-weight:bold; color:${safeColor}">${safeEff}%</td><td>${getTotalDown(r)}m</td><td><b>${getTotalScrap(r)}</b></td>
-                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}"><div class="action-cell"><button class="icon-btn" onclick="openEditModal(${r.id})">✏️</button><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></div></td>
+                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}"><div class="action-cell"><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></div></td>
                 </tr>`;
             }).join('');
         }
 
-        async function autoGenerateWorkOrder(lineName, commentText) {
-            const warningMsg = `🚨 URGENT WORK ORDER GENERATED: ${lineName} experienced critical mechanical failure. Supervisor Note: "${commentText}"`;
-            await sb.from('live_comments').insert([{ user_name: 'SYSTEM 🤖', message: warningMsg, module: 'production' }]);
-        }
-
-        async function saveData() {
-            const btn = document.getElementById('transmit-btn'); 
-            const mechDown = parseInt(document.getElementById('f-mech').value) || 0;
-            const assetLine = document.getElementById('f-line').value;
-            const comment = document.getElementById('f-comment').value;
-
-            if(mechDown >= 30) { 
-                document.getElementById('andon-siren').style.display = 'block'; 
-                autoGenerateWorkOrder(assetLine, comment || "No specific comment provided by operator.");
-            }
-
-            const entry = {
-                date: document.getElementById('f-date').value || new Date().toISOString().split('T')[0],
-                shift: document.getElementById('f-shift').value, line: assetLine,
-                target: parseInt(document.getElementById('f-target').value) || 0, actual: parseInt(document.getElementById('f-actual').value) || 0, 
-                run: parseInt(document.getElementById('f-run').value) || 480, 
-                down_mech: mechDown, down_elec: parseInt(document.getElementById('f-elec').value) || 0,
-                down_mat: parseInt(document.getElementById('f-mat').value) || 0, down_qc: parseInt(document.getElementById('f-qc').value) || 0, down_pack: parseInt(document.getElementById('f-pack').value) || 0,
-                defect_weld: parseInt(document.getElementById('f-scrap-weld').value) || 0, defect_scratch: parseInt(document.getElementById('f-scrap-scratch').value) || 0, defect_flange: parseInt(document.getElementById('f-scrap-flange').value) || 0,
-                comment: comment, created_at: new Date().toISOString()
-            };
-            if (entry.target === 0 || entry.actual === 0) { alert("Target and Actual required."); return; }
-            btn.innerText = "UPLOADING...";
-            const { error } = await sb.from('production_logs').insert([entry]);
-            if(!error) { 
-                await fetchData(); btn.innerText = "SUCCESS"; setTimeout(() => { btn.innerText = "☁️ TRANSMIT RECORD"; }, 2000);
-                ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange', 'f-comment'].forEach(id => document.getElementById(id).value = '');
-            } else { alert("ACCESS DENIED: Database locked. Or verify 'defect_' columns exist."); btn.innerText = "☁️ TRANSMIT RECORD"; }
-        }
-
-        function openEditModal(id) {
-            const log = rawData.find(r => r.id === id); if(!log) return;
-            document.getElementById('edit-id').value = id; 
-            document.getElementById('edit-reason').value = ''; 
-            document.getElementById('edit-target').value = log.target; document.getElementById('edit-actual').value = log.actual;
-            document.getElementById('edit-mech').value = log.down_mech || 0; document.getElementById('edit-elec').value = log.down_elec || 0; document.getElementById('edit-mat').value = log.down_mat || 0;
-            document.getElementById('edit-qc').value = log.down_qc || 0; document.getElementById('edit-pack').value = log.down_pack || 0; 
-            document.getElementById('edit-scrap-weld').value = log.defect_weld || 0; document.getElementById('edit-scrap-scratch').value = log.defect_scratch || 0; document.getElementById('edit-scrap-flange').value = log.defect_flange || 0;
-            document.getElementById('edit-modal').style.display = 'block'; document.getElementById('main-overlay').style.display = 'block';
-        }
-
-        async function submitEdit() {
-            const id = document.getElementById('edit-id').value;
-            const reason = document.getElementById('edit-reason').value.trim();
-            
-            if(!reason) { alert("🛑 ISO COMPLIANCE BLOCK: You must state the exact reason for altering this official record."); return; }
-
-            const log = rawData.find(r => r.id == id);
-            const updates = { 
-                target: parseInt(document.getElementById('edit-target').value)||0, actual: parseInt(document.getElementById('edit-actual').value)||0, 
-                down_mech: parseInt(document.getElementById('edit-mech').value)||0, down_elec: parseInt(document.getElementById('edit-elec').value)||0, down_mat: parseInt(document.getElementById('edit-mat').value)||0, down_qc: parseInt(document.getElementById('edit-qc').value)||0, down_pack: parseInt(document.getElementById('edit-pack').value)||0, 
-                defect_weld: parseInt(document.getElementById('edit-scrap-weld').value)||0, defect_scratch: parseInt(document.getElementById('edit-scrap-scratch').value)||0, defect_flange: parseInt(document.getElementById('edit-scrap-flange').value)||0
-            };
-
-            try {
-                const auditEntry = {
-                    action: 'UPDATE', record_id: id, machine: log.line,
-                    old_value: `Yield: ${log.actual}, Target: ${log.target}, Scrap: ${getTotalScrap(log)}`,
-                    new_value: `Yield: ${updates.actual}, Target: ${updates.target}, Scrap: ${updates.defect_weld + updates.defect_scratch + updates.defect_flange}`,
-                    reason: reason, changed_by: currentUser || 'Admin'
-                };
-                await sb.from('audit_logs').insert([auditEntry]);
-                
-                const { error } = await sb.from('production_logs').update(updates).eq('id', id);
-                if(!error) { closeModals(); await fetchData(); } else { alert("ACCESS DENIED: Database locked by RLS. Only Admin can update."); }
-            } catch(e) {
-                alert("Audit system error. Action aborted.");
-            }
-        }
-
-        async function deleteLog(id) { 
-            const reason = prompt("🛑 ISO COMPLIANCE CHECK: State reason for permanent deletion:");
-            if(!reason) { alert("Deletion cancelled. A valid reason is strictly required."); return; }
-            
-            const log = rawData.find(r => r.id == id);
-            
-            try {
-                const auditEntry = {
-                    action: 'DELETE', record_id: id, machine: log.line,
-                    old_value: `Date: ${log.date}, Yield: ${log.actual}, Target: ${log.target}`,
-                    new_value: `DELETED`,
-                    reason: reason, changed_by: currentUser || 'Admin'
-                };
-                await sb.from('audit_logs').insert([auditEntry]);
-                const { error } = await sb.from('production_logs').delete().eq('id', id); 
-                if(error) alert("ACCESS DENIED: Database locked by RLS. Only Admin can delete.");
-                else fetchData(); 
-            } catch(e) {
-                alert("Audit system error. Deletion aborted.");
-            }
-        }
-
-        async function openAuditLedger() {
-            document.getElementById('system-menu').classList.remove('active');
-            document.getElementById('main-overlay').style.display = 'block';
-            document.getElementById('audit-modal').style.display = 'block';
-            document.getElementById('audit-content').innerHTML = "Fetching secure records...";
-            
-            try {
-                const { data, error } = await sb.from('audit_logs').select('*').order('created_at', {ascending: false}).limit(100);
-                if(error) throw error;
-                
-                if(data && data.length > 0) {
-                    document.getElementById('audit-content').innerHTML = data.map(l => {
-                        let color = l.action === 'DELETE' ? 'var(--danger)' : '#8b5cf6';
-                        return `
-                        <div class="audit-record" style="border-left-color: ${color}">
-                            <div><span style="color:var(--text-dim);">${new Date(l.created_at).toLocaleString()}</span> | <b>[${l.action}]</b> on ${l.machine}</div>
-                            <div style="margin-top:5px; color:var(--text);">👤 <b>User:</b> ${l.changed_by}</div>
-                            <div style="margin-top:2px; color:var(--text);">📝 <b>Reason:</b> <i>"${l.reason}"</i></div>
-                            <div style="margin-top:2px; color:var(--text-dim);">⏪ <b>From:</b> ${l.old_value}</div>
-                            <div style="margin-top:2px; color:var(--text-dim);">⏩ <b>To:</b> ${l.new_value}</div>
-                        </div>`;
-                    }).join('');
-                } else {
-                    document.getElementById('audit-content').innerHTML = "No audit records found. Data is untouched.";
-                }
-            } catch(e) {
-                document.getElementById('audit-content').innerHTML = `<span style="color:var(--danger)">ACCESS DENIED: RLS Block. Or ensure table 'audit_logs' is created in Supabase.</span>`;
-            }
-        }
-
+        // ==========================================
+        // V25.0 UPGRADE 1: DRILL-DOWN INTERACTIVE CHARTS
+        // ==========================================
         function initCharts() {
             const cleanScales = { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(100,116,139,0.1)' } } };
-            const barScales = { x: { grid: { display: false } }, y: { max: 100, grid: { color: 'rgba(100,116,139,0.1)' } } };
             const animCfg = { duration: 600, easing: 'easeOutQuart' };
 
             charts.prod = new Chart(document.getElementById('prodChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Actual', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', fill: true, tension: 0.3, data: [] }, { label: 'Target', borderColor: '#94a3b8', borderDash:[4,4], data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'top', align: 'end' } }, scales: cleanScales } });
-            charts.util = new Chart(document.getElementById('utilChart'), { type: 'doughnut', data: { labels: ['Mechanical', 'Electrical', 'Material', 'QC', 'Packer'], datasets: [{ data: [0,0,0,0,0], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b', '#10b981'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, cutout:'70%', plugins: { legend: { position: 'right' } } } });
+            
+            // Interactive Doughnut Chart
+            charts.util = new Chart(document.getElementById('utilChart'), { 
+                type: 'doughnut', 
+                data: { labels: ['Mechanical', 'Electrical', 'Material', 'QC', 'Packer'], datasets: [{ data: [0,0,0,0,0], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b', '#10b981'], borderWidth: 2, borderColor: 'var(--surface)', hoverOffset: 10 }]}, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, cutout:'60%', 
+                    plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: function(context) { return context.label + ': ' + context.parsed + ' mins'; } } } },
+                    onClick: (e, activeEls) => {
+                        if(activeEls.length > 0) {
+                            const index = activeEls[0].index;
+                            const filterLabel = charts.util.data.labels[index];
+                            let drillData = [];
+                            
+                            // Drill-down filter logic
+                            if(filterLabel === 'Mechanical') drillData = filteredData.filter(r => r.down_mech > 0);
+                            else if(filterLabel === 'Electrical') drillData = filteredData.filter(r => r.down_elec > 0);
+                            else if(filterLabel === 'Material') drillData = filteredData.filter(r => r.down_mat > 0);
+                            else if(filterLabel === 'QC') drillData = filteredData.filter(r => r.down_qc > 0);
+                            else if(filterLabel === 'Packer') drillData = filteredData.filter(r => r.down_pack > 0);
+                            
+                            renderTable(drillData);
+                        }
+                    }
+                } 
+            });
             
             const groupLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'];
-            charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
-            charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: barScales } });
+            charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { max: 100, grid: { color: 'rgba(100,116,139,0.1)' } } } } });
+            charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { max: 100, grid: { color: 'rgba(100,116,139,0.1)' } } } } });
             charts.shiftComp = new Chart(document.getElementById('shiftCompChart'), { type: 'bar', data: { labels: ['Day Shift', 'Night Shift'], datasets: [{ label: 'Total Output', backgroundColor: ['#f59e0b', '#2563eb'], data: [0, 0], borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(100,116,139,0.1)' } }, y: { grid: { display: false } } } } });
             charts.qc = new Chart(document.getElementById('qcChart'), { type: 'bar', data: { labels: ['Bad Welds', 'Scratches', 'Flanging'], datasets: [{ label: 'Cans Lost', backgroundColor: '#ef4444', borderRadius: 4, data: [0,0,0] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: cleanScales } });
         }
@@ -755,13 +519,12 @@
             const labels = [...new Set(filteredData.map(r => r.date))].sort();
             charts.prod.data.labels = labels; charts.prod.data.datasets[0].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+(r.actual||0),0)); charts.prod.data.datasets[1].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+(r.target||0),0)); charts.prod.update();
 
-            const reasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
-            let w=0, s=0, f=0;
+            let m=0, e=0, mat=0, q=0, p=0, w=0, s=0, f=0;
             filteredData.forEach(r => { 
-                reasons.Mechanical += (r.down_mech || 0); reasons.Electrical += (r.down_elec || 0); reasons.Material += (r.down_mat || 0); reasons.QC += (r.down_qc || 0); reasons.Packer += (r.down_pack || 0); 
+                m += (r.down_mech || 0); e += (r.down_elec || 0); mat += (r.down_mat || 0); q += (r.down_qc || 0); p += (r.down_pack || 0); 
                 w += (r.defect_weld||0); s += (r.defect_scratch||0); f += (r.defect_flange||0);
             });
-            charts.util.data.datasets[0].data = Object.values(reasons); charts.util.update();
+            charts.util.data.datasets[0].data = [m, e, mat, q, p]; charts.util.update();
 
             let qcData = [{n:'Bad Welds', v:w}, {n:'Scratches', v:s}, {n:'Flanging', v:f}].sort((a,b)=>b.v - a.v);
             charts.qc.data.labels = qcData.map(d=>d.n); charts.qc.data.datasets[0].data = qcData.map(d=>d.v); charts.qc.update();
@@ -780,104 +543,102 @@
             charts.shiftComp.data.datasets[0].data = [ filteredData.filter(r => r.shift === "Day Shift").reduce((sum,r)=>sum+(r.actual||0),0), filteredData.filter(r => r.shift === "Night Shift").reduce((sum,r)=>sum+(r.actual||0),0) ]; charts.shiftComp.update();
         }
 
-        function generateSmartReportText() {
-            if(filteredData.length === 0) return "No production data found for the selected timeframe.";
-            
-            let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
-            const yield = filteredData.reduce((s,r)=>s+(r.actual||0),0); 
-            const target = filteredData.reduce((s,r)=>s+(r.target||0),0); 
-            const down = filteredData.reduce((s,r)=>s+getTotalDown(r),0);
-            const scrap = filteredData.reduce((s,r)=>s+getTotalScrap(r),0);
-            const eff = target > 0 ? (yield/target*100).toFixed(1) : 0;
+        // ==========================================
+        // V25.0 UPGRADE 2: 3D DIGITAL TWIN (THREE.JS)
+        // ==========================================
+        let scene, camera, renderer, factoryObjects = {};
+        
+        function toggleTwin() {
+            isTwinVisible = !isTwinVisible;
+            document.getElementById('traditional-charts').style.display = isTwinVisible ? 'none' : 'block';
+            document.getElementById('twin-container').style.display = isTwinVisible ? 'block' : 'none';
+            if(isTwinVisible) {
+                // Resize fix for Three.js when unhiding
+                const container = document.getElementById('twin-container');
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                update3DTwin();
+            }
+        }
 
-            let lines = {}; 
-            const downReasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
-            const scrapReasons = { "Bad Welds": 0, "Scratches": 0, "Flanging Errors": 0 };
+        function init3DTwin() {
+            const container = document.getElementById('twin-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
             
-            filteredData.forEach(r => { 
-                const safeLine = r.line || "Unknown Asset";
-                if(!lines[safeLine]) lines[safeLine] = {a:0, t:0, d:0, s:0}; 
-                lines[safeLine].a += (r.actual||0); lines[safeLine].t += (r.target||0); 
+            // Grid and Lights
+            const gridHelper = new THREE.GridHelper(40, 40, '#334155', '#1e293b');
+            scene.add(gridHelper);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 15, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.1; // Don't go below floor
+
+            // Create Factory Floor Lines
+            const lineNames = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Slitter'];
+            const startX = -12;
+            
+            lineNames.forEach((name, i) => {
+                const geometry = new THREE.BoxGeometry(2, 1.5, 6);
+                const material = new THREE.MeshPhongMaterial({ color: '#64748b', transparent: true, opacity: 0.9 });
+                const cube = new THREE.Mesh(geometry, material);
                 
-                downReasons.Mechanical += (r.down_mech || 0); downReasons.Electrical += (r.down_elec || 0); downReasons.Material += (r.down_mat || 0); downReasons.QC += (r.down_qc || 0); downReasons.Packer += (r.down_pack || 0); 
-                scrapReasons["Bad Welds"] += (r.defect_weld||0); scrapReasons["Scratches"] += (r.defect_scratch||0); scrapReasons["Flanging Errors"] += (r.defect_flange||0);
+                cube.position.set(startX + (i * 4), 0.75, 0);
+                scene.add(cube);
+                factoryObjects[name] = cube;
             });
-            
-            let worstLine = "None"; let worstEff = 100;
-            for(let l in lines) {
-                let lEff = lines[l].t > 0 ? (lines[l].a / lines[l].t * 100) : 100;
-                if(lEff < worstEff) { worstEff = lEff; worstLine = l; }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
             }
-            let topDownReason = Object.keys(downReasons).reduce((a,b) => downReasons[a] > downReasons[b] ? a : b);
-            let topScrapReason = Object.keys(scrapReasons).reduce((a,b) => scrapReasons[a] > scrapReasons[b] ? a : b);
-
-            let text = `SUBJECT: RCC Production Analytics Report - ${modeText}\n\n`;
-            text += `Dear Management Team,\n\n`;
-            text += `Please find the automated production and performance analysis for the selected timeframe (${modeText}) below.\n\n`;
-            
-            text += `📊 1. EXECUTIVE SUMMARY\n`;
-            text += `--------------------------------------------------\n`;
-            text += `• Total Output: ${yield.toLocaleString()} cans\n`;
-            text += `• Target Output: ${target.toLocaleString()} cans\n`;
-            text += `• Plant Efficiency: ${eff}%\n`;
-            text += `• Total Downtime: ${down.toLocaleString()} minutes\n`;
-            text += `• Total QC Scrap: ${scrap.toLocaleString()} cans\n\n`;
-
-            text += `🔬 2. DATA ANALYST INSIGHTS\n`;
-            text += `--------------------------------------------------\n`;
-            text += `Performance Overview: The plant operated at an average efficiency of ${eff}%. `;
-            if(eff >= 90) text += `This indicates excellent operational health.\n`;
-            else if(eff >= 75) text += `This is within acceptable ranges, but leaves room for optimization.\n`;
-            else text += `This is below standard benchmarks, indicating critical bottlenecks.\n`;
-            
-            if(worstLine !== "None") { text += `\nAsset Bottleneck: ${worstLine} was the lowest performing asset, operating at ${worstEff.toFixed(1)}% efficiency.\n`; }
-            if(downReasons[topDownReason] > 0) { text += `Downtime Root Cause: The primary cause of lost production time was ${topDownReason} delays, totaling ${downReasons[topDownReason]} minutes.\n`; }
-            if(scrapReasons[topScrapReason] > 0) { text += `Quality Control Variance: The most frequent defect recorded was ${topScrapReason}, accounting for ${scrapReasons[topScrapReason]} rejected units.\n\n`; }
-
-            text += `🎯 3. STRATEGIC RECOMMENDATIONS\n`;
-            text += `--------------------------------------------------\n`;
-            if(worstLine !== "None" && downReasons[topDownReason] > 0) {
-                if(topDownReason === "Mechanical") text += `• Maintenance Action: Dispatch the engineering team to perform an immediate mechanical audit on ${worstLine} to resolve jamming/wear issues.\n`;
-                else if(topDownReason === "Electrical") text += `• Technical Action: Inspect sensors, PLCs, and wiring harnesses on ${worstLine} to mitigate electrical faults.\n`;
-                else if(topDownReason === "Material") text += `• Supply Chain Action: Review raw material quality (tinplate/wire) feeding into ${worstLine}, as it is causing significant feed delays.\n`;
-                else text += `• Operational Action: Review SOPs and operator training on ${worstLine} to reduce ${topDownReason} delays.\n`;
-            }
-            if(scrapReasons[topScrapReason] > 0) {
-                if(topScrapReason === "Bad Welds") text += `• Quality Action: Check cooling water temperature and redress welding rollers to eliminate Bad Weld defects.\n`;
-                else if(topScrapReason === "Scratches") text += `• Quality Action: Inspect the conveyor guides and Z-bar for burrs causing Scratches on the tinplate.\n`;
-                else if(topScrapReason === "Flanging Errors") text += `• Quality Action: Recalibrate the flanger tooling dies to reduce Flanging Errors.\n`;
-            }
-            
-            text += `\nThank you,\n\n`;
-            text += `RCC Bodyline OS\n`;
-            text += `Automated Analytics Engine\n`;
-
-            return text;
+            animate();
         }
 
-        function generateSmartReport() {
-            if(filteredData.length === 0) { alert("No data found for this timeframe."); return; }
-            document.getElementById('report-content').innerText = generateSmartReportText();
-            document.getElementById('system-menu').classList.remove('active'); document.getElementById('main-overlay').style.display = 'block'; document.getElementById('report-modal').style.display = 'block';
-        }
-
-        function sendEmailNow() {
-            if(filteredData.length === 0) { alert("No data to email for this timeframe."); return; }
-            const emails = document.getElementById('email-list').value;
-            if(!emails) { alert("Please enter recipient emails in the input box above first."); return; }
+        function update3DTwin() {
+            if(!scene) return;
             
-            const subject = encodeURIComponent(`RCC Production Report - ${currentMode.toUpperCase()}`);
-            const body = encodeURIComponent(generateSmartReportText());
-            window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+            // Calculate live efficiency per line based on filtered data
+            const lineNames = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'Slitter'];
+            
+            lineNames.forEach(name => {
+                const rs = filteredData.filter(x => x.line && x.line.toUpperCase().includes(name.toUpperCase()));
+                const a = rs.reduce((sum,x)=>sum+(x.actual||0),0);
+                const t = rs.reduce((sum,x)=>sum+(x.target||0),0);
+                const eff = t > 0 ? (a/t*100) : 0;
+                
+                let targetColor = '#64748b'; // Gray (No Data)
+                if (t > 0) {
+                    if (eff >= 80) targetColor = '#10b981'; // Green
+                    else if (eff >= 65) targetColor = '#f59e0b'; // Yellow
+                    else targetColor = '#ef4444'; // Red (Critical)
+                }
+
+                if(factoryObjects[name]) {
+                    factoryObjects[name].material.color.set(targetColor);
+                }
+            });
         }
 
-        function copyReportNow() {
-            if(filteredData.length === 0) { alert("No data to copy."); return; }
-            navigator.clipboard.writeText(generateSmartReportText()).then(() => { 
-                alert("Report copied to clipboard! You can now paste it into Viber, Slack, or any Email client."); 
-            }).catch(err => { alert("Copy failed: " + err); });
-        }
 
+        // ==========================================
+        // V25.0 UPGRADE 3: LOCAL AI ORACLE ENGINE
+        // ==========================================
         async function fetchComments() {
             try {
                 const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
@@ -885,80 +646,124 @@
                 if(data) {
                     const chatBox = document.getElementById('chat-box');
                     const isScrolledToBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 20;
+                    
                     const newHTML = data.map(c => {
                         const safeUser = c.user_name || "Unknown";
-                        const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase().includes("engr") || safeUser.includes("SYSTEM") || safeUser.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+                        const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase().includes("engr") || safeUser.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
                         const canDelete = (safeUser === currentUser) || isEngineer;
-                        const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
+                        const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteLog(${c.id}, 'live_comments')">✖</button>` : '';
                         
-                        if(safeUser === 'SYSTEM 🤖') {
+                        // Oracle Styling
+                        if(safeUser === 'RCC ORACLE') {
+                            return `<div class="chat-msg oracle-msg">${delBtn} <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`;
+                        } else if(safeUser === 'SYSTEM 🤖') {
                             return `<div class="chat-msg" style="border-left-color:var(--danger); background:rgba(239, 68, 68, 0.05);">${delBtn} <b style="color:var(--danger);">${safeUser}</b> <span style="display:block; margin-top:4px; font-weight:bold; color:var(--danger);">${c.message}</span></div>`;
                         }
                         
                         return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">${delBtn} <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`;
                     }).join('');
+                    
                     if (chatBox.innerHTML !== newHTML) { chatBox.innerHTML = newHTML; if (isScrolledToBottom) { chatBox.scrollTop = chatBox.scrollHeight; } }
                 }
             } catch (err) { console.error("Chat Error:", err.message); }
         }
-        
+
         async function sendComment() { 
             try {
                 const i = document.getElementById('chat-input'); const msg = i.value.trim();
                 if(msg) { 
                     const safeUser = currentUser || "Operator"; 
-                    const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
-                    const chatBox = document.getElementById('chat-box'); const newDiv = document.createElement('div');
-                    newDiv.className = 'chat-msg'; newDiv.style.borderLeftColor = isAdmin ? 'var(--accent)' : 'var(--border)';
-                    newDiv.innerHTML = `<button class="del-msg-btn" disabled>⏳</button> <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${msg}</span>`;
-                    chatBox.appendChild(newDiv); chatBox.scrollTop = chatBox.scrollHeight; i.value = ''; 
-                    const { error } = await sb.from('live_comments').insert([{ user_name: safeUser, message: msg, module: 'production' }]); 
-                    if(error) throw error; setTimeout(fetchComments, 400); 
+                    i.value = ''; 
+                    
+                    // Save user message to database
+                    await sb.from('live_comments').insert([{ user_name: safeUser, message: msg, module: 'production' }]); 
+                    
+                    // 🧠 AI ORACLE TRIGGER LOGIC
+                    if (msg.toLowerCase().startsWith("@oracle") || msg.toLowerCase().startsWith("/ai")) {
+                        setTimeout(() => { processOracleQuery(msg.toLowerCase().replace('@oracle','').replace('/ai','').trim()); }, 500);
+                    }
+                    
+                    setTimeout(fetchComments, 400); 
                 } 
-            } catch (err) { alert("Failed to send message: " + err.message); }
+            } catch (err) { alert("Failed to send message."); }
         }
 
-        async function deleteComment(id) { if(confirm("Remove this message?")) { await sb.from('live_comments').delete().eq('id', id); fetchComments(); } }
-        function saveNotes() { localStorage.setItem('bodyline_notes', document.getElementById('prod-notepad').value); }
-        function loadNotes() { document.getElementById('prod-notepad').value = localStorage.getItem('bodyline_notes') || ""; }
+        async function processOracleQuery(query) {
+            let response = "I am the RCC Oracle. I analyze your live production data locally. Try asking: 'What is the status of Line 1?', 'What is our worst downtime cause?', or 'What is total scrap?'";
+            
+            // 1. Line Status Query
+            if (query.includes("status") && query.includes("line")) {
+                const lineMatch = query.match(/line \d/);
+                if (lineMatch) {
+                    const lineName = lineMatch[0];
+                    const rs = filteredData.filter(x => x.line && x.line.toLowerCase().includes(lineName.toLowerCase()));
+                    if(rs.length > 0) {
+                        const a = rs.reduce((sum,x)=>sum+(x.actual||0),0);
+                        const t = rs.reduce((sum,x)=>sum+(x.target||0),0);
+                        const m = rs.reduce((sum,x)=>sum+(x.down_mech||0),0);
+                        const eff = t > 0 ? (a/t*100).toFixed(1) : 0;
+                        response = `Scanning ${lineName.toUpperCase()} telemetry... Current Efficiency: **${eff}%**. Output: ${a.toLocaleString()}/${t.toLocaleString()}. Accumulated Mechanical Downtime: ${m} minutes.`;
+                    } else { response = `I do not see any active production logs for ${lineName.toUpperCase()} in the current timeframe.`; }
+                }
+            }
+            // 2. Worst Downtime Query
+            else if (query.includes("worst") || query.includes("downtime") || query.includes("cause")) {
+                let m=0, e=0, mat=0, q=0, p=0;
+                filteredData.forEach(r => { m+=(r.down_mech||0); e+=(r.down_elec||0); mat+=(r.down_mat||0); q+=(r.down_qc||0); p+=(r.down_pack||0); });
+                const reasons = { "Mechanical": m, "Electrical": e, "Material Shortage": mat, "Quality Control": q, "Packer": p };
+                const worst = Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b);
+                if (reasons[worst] > 0) {
+                    response = `Diagnostic scan complete. Your primary bottleneck is **${worst}**, accounting for **${reasons[worst]} minutes** of lost production time in this view.`;
+                } else { response = "No significant downtime recorded in the current timeframe."; }
+            }
+            // 3. Scrap Query
+            else if (query.includes("scrap") || query.includes("reject")) {
+                let w=0, s=0, f=0;
+                filteredData.forEach(r => { w+=(r.defect_weld||0); s+=(r.defect_scratch||0); f+=(r.defect_flange||0); });
+                const total = w+s+f;
+                const reasons = { "Bad Welds": w, "Scratches": s, "Flanging Errors": f };
+                const worst = Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b);
+                response = `Total QC Scrap is currently **${total.toLocaleString()} cans**. The highest failure mode is **${worst}** (${reasons[worst]} rejected units).`;
+            }
 
-        async function fetchAccessLogs() {
-            const display = document.getElementById('access-log-display'); if(!display) return;
-            display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Pinging Supabase for logs...</span>";
-            try {
-                const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
-                if(error) throw error;
-                if(data && data.length > 0) { display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); } 
-                else { display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet in database.</span>"; }
-            } catch(err) { display.innerHTML = `<span style='color:var(--danger);'><b>DB ERROR:</b> ${err.message}<br><br><i>Action: Ensure 'access_logs' table exists and RLS is disabled in Supabase.</i></span>`; }
+            // Save Oracle Response to DB
+            await sb.from('live_comments').insert([{ user_name: 'RCC ORACLE', message: response, module: 'production' }]);
+            fetchComments();
         }
 
-        function exportExcel() {
-            if(filteredData.length === 0) return alert("No data to export.");
-            const wsData = filteredData.map(r => ({ "Date": r.date, "Shift": r.shift, "Asset": r.line, "Actual": r.actual, "Target": r.target, "Eff %": r.target>0?(r.actual/r.target*100).toFixed(1):0, "Total Down (min)": getTotalDown(r), "Mech (m)": r.down_mech||0, "Elec (m)": r.down_elec||0, "Mat (m)": r.down_mat||0, "QC (m)": r.down_qc||0, "Pack (m)": r.down_pack||0, "Bad Welds": r.defect_weld||0, "Scratches": r.defect_scratch||0, "Flanging": r.defect_flange||0, "Comment": r.comment }));
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wsData), "Filtered Logs");
-            XLSX.writeFile(wb, `RCC_Filtered_Report.xlsx`);
+        async function saveData() {
+            const entry = {
+                date: document.getElementById('f-date').value || new Date().toISOString().split('T')[0],
+                shift: document.getElementById('f-shift').value, line: document.getElementById('f-line').value,
+                target: parseInt(document.getElementById('f-target').value) || 0, actual: parseInt(document.getElementById('f-actual').value) || 0, 
+                run: parseInt(document.getElementById('f-run').value) || 480, 
+                down_mech: parseInt(document.getElementById('f-mech').value) || 0, down_elec: parseInt(document.getElementById('f-elec').value) || 0,
+                down_mat: parseInt(document.getElementById('f-mat').value) || 0, down_qc: parseInt(document.getElementById('f-qc').value) || 0, down_pack: parseInt(document.getElementById('f-pack').value) || 0,
+                defect_weld: parseInt(document.getElementById('f-scrap-weld').value) || 0, defect_scratch: parseInt(document.getElementById('f-scrap-scratch').value) || 0, defect_flange: parseInt(document.getElementById('f-scrap-flange').value) || 0,
+                created_at: new Date().toISOString()
+            };
+            if (entry.target === 0 || entry.actual === 0) { alert("Target and Actual required."); return; }
+            const { error } = await sb.from('production_logs').insert([entry]);
+            if(!error) { 
+                fetchData(); 
+                ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange'].forEach(id => document.getElementById(id).value = '');
+            } else { alert("ACCESS DENIED: Database locked."); }
+        }
+
+        async function deleteLog(id, table = 'production_logs') { 
+            if(confirm("Permanently delete this record?")) {
+                const { error } = await sb.from(table).delete().eq('id', id); 
+                if(error) alert("ACCESS DENIED."); else { if(table==='production_logs') fetchData(); else fetchComments(); }
+            }
         }
 
         function toggleMenu() { 
             const menu = document.getElementById('system-menu'); menu.classList.toggle('active'); 
             document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
-            if(menu.classList.contains('active')) fetchAccessLogs();
         }
-        
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('main-overlay').style.display = 'none'; }
-        function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); if(charts.prod){ Chart.defaults.color = document.body.classList.contains('dark-mode') ? '#94a3b8' : '#64748b'; Object.values(charts).forEach(c => c.update()); } }
-        function downloadReport() { const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([document.getElementById('report-content').innerText], { type: 'text/plain' })); a.download = `RCC_Summary.txt`; a.click(); }
-        
-        setInterval(() => { 
-            document.getElementById('live-clock').innerText = new Date().toLocaleString(); 
-            checkAutomations();
-        }, 1000);
-        
-        window.onload = () => { 
-            checkSession();
-            if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark-mode'); 
-        };
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+        window.onload = checkSession;
     </script>
 </body>
 </html>
