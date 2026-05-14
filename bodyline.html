@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v25.4 Optimistic UI</title>
+    <title>RCC Bodyline OS | v26.0 Complete Analytics</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -185,8 +185,18 @@
             </div>
 
             <div class="chart-row">
-                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--danger);">QC Scrap Pareto Matrix</h3><div style="height: 220px;"><canvas id="qcChart"></canvas></div></div>
-                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Size Distribution</h3><div style="height: 220px;"><canvas id="sizeChart"></canvas></div></div>
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Day Shift Efficiency (Line Comparison)</h3><div style="height: 180px;"><canvas id="effChartDay"></canvas></div></div>
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color: var(--text-dim);">Night Shift Efficiency (Line Comparison)</h3><div style="height: 180px;"><canvas id="effChartNight"></canvas></div></div>
+            </div>
+
+            <div class="chart-row">
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Shift Output Comparison</h3><div style="height: 200px;"><canvas id="shiftCompChart"></canvas></div></div>
+                <div class="panel"><h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--danger);">QC Scrap Pareto Matrix</h3><div style="height: 200px;"><canvas id="qcChart"></canvas></div></div>
+            </div>
+
+            <div class="panel" style="margin-bottom: 20px;">
+                <h3 style="margin:0 0 15px 0; font-size:12px; text-transform: uppercase; color:var(--text-dim);">Can Size Yield Distribution</h3>
+                <div style="height: 220px;"><canvas id="sizeChart"></canvas></div>
             </div>
         </div>
 
@@ -243,13 +253,14 @@
                 </div>
 
                 <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px; margin-top:10px;">QC SCRAP MATRIX (CANS LOST)</label>
-                <div class="qc-grid" id="qc-input-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; padding:15px; background: rgba(239, 68, 68, 0.05); border: 1px dashed var(--danger); border-radius: 8px; margin-bottom: 10px;">
-                    <div><label style="font-size:10px; color:var(--text-dim);">❌ BAD WELDS</label><input type="number" id="f-scrap-weld" placeholder="0"></div>
-                    <div><label style="font-size:10px; color:var(--text-dim);">🔪 SCRATCHES</label><input type="number" id="f-scrap-scratch" placeholder="0"></div>
-                    <div><label style="font-size:10px; color:var(--text-dim);">🥫 FLANGING ERRORS</label><input type="number" id="f-scrap-flange" placeholder="0"></div>
+                <div class="qc-grid" id="qc-input-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; padding:15px; background: rgba(239, 68, 68, 0.05); border: 1px dashed var(--danger); border-radius: 8px; margin-bottom: 10px;">
+                    <div><label style="font-size:10px; color:var(--text-dim);">❌ WELDS</label><input type="number" id="f-scrap-weld" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">🔪 SCRATCH</label><input type="number" id="f-scrap-scratch" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">🥫 FLANGING</label><input type="number" id="f-scrap-flange" placeholder="0"></div>
+                    <div><label style="font-size:10px; color:var(--text-dim);">🧵 SEAMING</label><input type="number" id="f-scrap-seam" placeholder="0"></div>
                 </div>
 
-                <button class="btn btn-primary" id="transmit-btn" onclick="saveData()" style="margin-top:10px;">☁️ TRANSMIT RECORD</button>
+                <button class="btn btn-primary" id="transmit-btn" onclick="saveData()" style="margin-top:10px;">☁️ TRANSMIT RECORD (OPTIMISTIC UI)</button>
             </div>
         </div>
 
@@ -268,8 +279,8 @@
             </div>
 
             <div class="panel chat-panel">
-                <h3 style="margin:0 0 5px 0; font-size:13px; text-transform:uppercase; color: var(--accent);">💬 AI Oracle & Comments</h3>
-                <p style="margin:0 0 10px 0; font-size:10px; color:var(--text-dim);">Type <b style="color:var(--accent)">@Oracle</b> to ask the AI Diagnostic Lead a question.</p>
+                <h3 style="margin:0 0 5px 0; font-size:13px; text-transform:uppercase; color: var(--accent);">💬 AI Oracle Diagnostics</h3>
+                <p style="margin:0 0 10px 0; font-size:10px; color:var(--text-dim);">Type <b style="color:var(--accent)">@Oracle</b> to ask the AI Analyst a question.</p>
                 <div id="chat-box" class="chat-container"></div>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="chat-input" placeholder="Type message or @Oracle..." style="margin:0;" onkeypress="if(event.key === 'Enter') sendComment()">
@@ -361,10 +372,11 @@
             <div><label style="font-size:9px;">PACK</label><input type="number" id="edit-pack" style="padding:10px;"></div>
         </div>
         <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">EDIT QC SCRAP (CANS)</label>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
             <div><label style="font-size:9px;">WELDS</label><input type="number" id="edit-scrap-weld" style="padding:10px;"></div>
             <div><label style="font-size:9px;">SCRATCH</label><input type="number" id="edit-scrap-scratch" style="padding:10px;"></div>
             <div><label style="font-size:9px;">FLANGE</label><input type="number" id="edit-scrap-flange" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">SEAMING</label><input type="number" id="edit-scrap-seam" style="padding:10px;"></div>
         </div>
         
         <div style="display:flex; gap:10px; margin-top:15px;">
@@ -410,14 +422,12 @@
             const assetSelect = document.getElementById('f-line').value;
             const sizeSelect = document.getElementById('f-size');
             sizeSelect.innerHTML = ""; 
-
             if(!assetSelect) { sizeSelect.innerHTML = `<option value="">Select Asset First</option>`; return; }
 
             let foundSizes = ["Standard Multi-Size"]; 
             for (const [lineKey, sizes] of Object.entries(lineSizeMap)) {
                 if (assetSelect.toUpperCase().includes(lineKey.toUpperCase())) { foundSizes = sizes; break; }
             }
-
             foundSizes.forEach(size => {
                 const opt = document.createElement('option'); opt.value = size; opt.innerText = size; sizeSelect.appendChild(opt);
             });
@@ -441,6 +451,7 @@
             toggleMenu(); 
         }
 
+        // --- CORE SYSTEM LOAD ---
         function applyRBAC(userEmail) {
             currentUser = userEmail;
             if (userEmail.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) { isEngineer = true; localStorage.setItem('rcc_role', 'admin'); } 
@@ -548,7 +559,8 @@
         }
 
         function getTotalDown(r) { return (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0); }
-        function getTotalScrap(r) { return (r.defect_weld || 0) + (r.defect_scratch || 0) + (r.defect_flange || 0); }
+        // NEW SEAMING INCLUDED
+        function getTotalScrap(r) { return (r.defect_weld || 0) + (r.defect_scratch || 0) + (r.defect_flange || 0) + (r.defect_seam || 0); }
 
         function updateAllVisuals() {
             updateKPIs(); renderTable(); updateCharts(); update3DTwin();
@@ -595,7 +607,7 @@
         }
 
         // ==========================================
-        // CHARTS & SIZE DISTRIBUTION GRAPH
+        // CHARTS, SIZE GRAPH & RESTORED LINE COMPS
         // ==========================================
         function initCharts() {
             const cleanScales = { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(100,116,139,0.1)' } } };
@@ -623,9 +635,13 @@
                     }
                 } 
             });
+
+            const groupLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'];
+            charts.effDay = new Chart(document.getElementById('effChartDay'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#10b981', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { max: 100, grid: { color: 'rgba(100,116,139,0.1)' } } } } });
+            charts.effNight = new Chart(document.getElementById('effChartNight'), { type: 'bar', data: { labels: groupLabels, datasets: [{ label: 'Eff %', data: [], backgroundColor: '#2563eb', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { max: 100, grid: { color: 'rgba(100,116,139,0.1)' } } } } });
+            charts.shiftComp = new Chart(document.getElementById('shiftCompChart'), { type: 'bar', data: { labels: ['Day Shift', 'Night Shift'], datasets: [{ label: 'Total Output', backgroundColor: ['#f59e0b', '#2563eb'], data: [0, 0], borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(100,116,139,0.1)' } }, y: { grid: { display: false } } } } });
             
-            charts.qc = new Chart(document.getElementById('qcChart'), { type: 'bar', data: { labels: ['Bad Welds', 'Scratches', 'Flanging'], datasets: [{ label: 'Cans Lost', backgroundColor: '#ef4444', borderRadius: 4, data: [0,0,0] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: cleanScales } });
-            
+            charts.qc = new Chart(document.getElementById('qcChart'), { type: 'bar', data: { labels: ['Bad Welds', 'Scratches', 'Flanging', 'Seaming'], datasets: [{ label: 'Cans Lost', backgroundColor: '#ef4444', borderRadius: 4, data: [0,0,0,0] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: cleanScales } });
             charts.sizeDist = new Chart(document.getElementById('sizeChart'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Total Yield', backgroundColor: '#8b5cf6', borderRadius: 4, data: [] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: cleanScales } });
         }
 
@@ -634,24 +650,36 @@
             const labels = [...new Set(filteredData.map(r => r.date))].sort();
             charts.prod.data.labels = labels; charts.prod.data.datasets[0].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+(r.actual||0),0)); charts.prod.data.datasets[1].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+(r.target||0),0)); charts.prod.update();
 
-            let m=0, e=0, mat=0, q=0, p=0, w=0, s=0, f=0;
+            let m=0, e=0, mat=0, q=0, p=0, w=0, s=0, f=0, seam=0;
             const sizeYields = {};
 
             filteredData.forEach(r => { 
                 m += (r.down_mech || 0); e += (r.down_elec || 0); mat += (r.down_mat || 0); q += (r.down_qc || 0); p += (r.down_pack || 0); 
-                w += (r.defect_weld||0); s += (r.defect_scratch||0); f += (r.defect_flange||0);
+                w += (r.defect_weld||0); s += (r.defect_scratch||0); f += (r.defect_flange||0); seam += (r.defect_seam||0);
                 
                 const safeSize = r.can_size || "Standard";
                 if(r.actual > 0) sizeYields[safeSize] = (sizeYields[safeSize] || 0) + r.actual;
             });
             charts.util.data.datasets[0].data = [m, e, mat, q, p]; charts.util.update();
 
-            let qcData = [{n:'Bad Welds', v:w}, {n:'Scratches', v:s}, {n:'Flanging', v:f}].sort((a,b)=>b.v - a.v);
+            let qcData = [{n:'Bad Welds', v:w}, {n:'Scratches', v:s}, {n:'Flanging', v:f}, {n:'Seaming', v:seam}].sort((a,b)=>b.v - a.v);
             charts.qc.data.labels = qcData.map(d=>d.n); charts.qc.data.datasets[0].data = qcData.map(d=>d.v); charts.qc.update();
 
             charts.sizeDist.data.labels = Object.keys(sizeYields);
             charts.sizeDist.data.datasets[0].data = Object.values(sizeYields);
             charts.sizeDist.update();
+
+            const groupLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', 'SLITTER'];
+            const updateShift = (chart, shift) => {
+                const vals = groupLabels.map(baseLine => { 
+                    const rs = filteredData.filter(x => x.line && x.line.startsWith(baseLine) && x.shift === shift); 
+                    const a = rs.reduce((sum,x)=>sum+(x.actual||0),0), t = rs.reduce((sum,x)=>sum+(x.target||0),0); 
+                    return t > 0 ? (a/t*100) : 0; 
+                });
+                chart.data.datasets[0].data = vals; chart.data.datasets[0].backgroundColor = vals.map(e => e === 0 ? '#e2e8f0' : (e < 65 ? '#ef4444' : (e < 80 ? '#f59e0b' : '#10b981'))); chart.update();
+            }
+            updateShift(charts.effDay, "Day Shift"); updateShift(charts.effNight, "Night Shift");
+            charts.shiftComp.data.datasets[0].data = [ filteredData.filter(r => r.shift === "Day Shift").reduce((sum,r)=>sum+(r.actual||0),0), filteredData.filter(r => r.shift === "Night Shift").reduce((sum,r)=>sum+(r.actual||0),0) ]; charts.shiftComp.update();
         }
 
         // ==========================================
@@ -717,7 +745,7 @@
         }
 
         // ==========================================
-        // DATA UPLOAD & OPTIMISTIC "INSTANT POP" RENDERING
+        // DATA UPLOAD & OPTIMISTIC UI
         // ==========================================
         async function saveData() {
             const btn = document.getElementById('transmit-btn');
@@ -732,21 +760,19 @@
                 down_mech: parseInt(document.getElementById('f-mech').value) || 0, down_elec: parseInt(document.getElementById('f-elec').value) || 0,
                 down_mat: parseInt(document.getElementById('f-mat').value) || 0, down_qc: parseInt(document.getElementById('f-qc').value) || 0, down_pack: parseInt(document.getElementById('f-pack').value) || 0,
                 defect_weld: parseInt(document.getElementById('f-scrap-weld').value) || 0, defect_scratch: parseInt(document.getElementById('f-scrap-scratch').value) || 0, defect_flange: parseInt(document.getElementById('f-scrap-flange').value) || 0,
+                defect_seam: parseInt(document.getElementById('f-scrap-seam').value) || 0,
                 created_at: new Date().toISOString()
             };
             if (entry.target === 0 || entry.actual === 0 || !entry.line) { alert("Target, Actual, and Line are required."); return; }
             
             btn.innerText = "UPLOADING...";
-            // Using .select() returns the inserted data WITH its new ID so we can edit/delete it instantly
             const { data, error } = await sb.from('production_logs').insert([entry]).select();
             if(!error && data) { 
-                // ✨ OPTIMISTIC UI RENDER: Instantly pop it into the live arrays without waiting for a full fetch
                 rawData.unshift(data[0]); 
-                processData(); // Instantly visually refresh the dashboard
-                
-                btn.innerText = "☁️ TRANSMIT RECORD";
-                ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange'].forEach(id => document.getElementById(id).value = '');
-            } else { alert("ACCESS DENIED: Database locked."); btn.innerText = "☁️ TRANSMIT RECORD"; }
+                processData(); 
+                btn.innerText = "☁️ TRANSMIT RECORD (OPTIMISTIC UI)";
+                ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange', 'f-scrap-seam'].forEach(id => document.getElementById(id).value = '');
+            } else { alert("ACCESS DENIED: Did you run the SQL to add 'defect_seam'?"); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
 
         // ==========================================
@@ -757,7 +783,6 @@
             document.getElementById('edit-id').value = id; 
             document.getElementById('edit-reason').value = ''; 
             
-            // Re-populate the specific Can Size dropdown based on the machine that was logged
             const sizeSelect = document.getElementById('edit-size');
             sizeSelect.innerHTML = ""; 
             let foundSizes = ["Standard Multi-Size"]; 
@@ -766,10 +791,9 @@
             }
             foundSizes.forEach(s => {
                 const opt = document.createElement('option'); opt.value = s; opt.innerText = s;
-                if(s === log.can_size) opt.selected = true; // Auto-select what they currently have
+                if(s === log.can_size) opt.selected = true; 
                 sizeSelect.appendChild(opt);
             });
-            // Fallback if they logged a size that isn't standard
             if(!foundSizes.includes(log.can_size) && log.can_size) {
                 const opt = document.createElement('option'); opt.value = log.can_size; opt.innerText = log.can_size; opt.selected = true; sizeSelect.appendChild(opt);
             }
@@ -777,7 +801,7 @@
             document.getElementById('edit-target').value = log.target; document.getElementById('edit-actual').value = log.actual;
             document.getElementById('edit-mech').value = log.down_mech || 0; document.getElementById('edit-elec').value = log.down_elec || 0; document.getElementById('edit-mat').value = log.down_mat || 0;
             document.getElementById('edit-qc').value = log.down_qc || 0; document.getElementById('edit-pack').value = log.down_pack || 0; 
-            document.getElementById('edit-scrap-weld').value = log.defect_weld || 0; document.getElementById('edit-scrap-scratch').value = log.defect_scratch || 0; document.getElementById('edit-scrap-flange').value = log.defect_flange || 0;
+            document.getElementById('edit-scrap-weld').value = log.defect_weld || 0; document.getElementById('edit-scrap-scratch').value = log.defect_scratch || 0; document.getElementById('edit-scrap-flange').value = log.defect_flange || 0; document.getElementById('edit-scrap-seam').value = log.defect_seam || 0;
             
             document.getElementById('edit-modal').style.display = 'block'; document.getElementById('main-overlay').style.display = 'block';
         }
@@ -792,7 +816,7 @@
                 can_size: document.getElementById('edit-size').value,
                 target: parseInt(document.getElementById('edit-target').value)||0, actual: parseInt(document.getElementById('edit-actual').value)||0, 
                 down_mech: parseInt(document.getElementById('edit-mech').value)||0, down_elec: parseInt(document.getElementById('edit-elec').value)||0, down_mat: parseInt(document.getElementById('edit-mat').value)||0, down_qc: parseInt(document.getElementById('edit-qc').value)||0, down_pack: parseInt(document.getElementById('edit-pack').value)||0, 
-                defect_weld: parseInt(document.getElementById('edit-scrap-weld').value)||0, defect_scratch: parseInt(document.getElementById('edit-scrap-scratch').value)||0, defect_flange: parseInt(document.getElementById('edit-scrap-flange').value)||0
+                defect_weld: parseInt(document.getElementById('edit-scrap-weld').value)||0, defect_scratch: parseInt(document.getElementById('edit-scrap-scratch').value)||0, defect_flange: parseInt(document.getElementById('edit-scrap-flange').value)||0, defect_seam: parseInt(document.getElementById('edit-scrap-seam').value)||0
             };
 
             try {
@@ -821,12 +845,15 @@
                 await sb.from('audit_logs').insert([auditEntry]);
                 const { error } = await sb.from('production_logs').delete().eq('id', id); 
                 if(!error) {
-                    rawData = rawData.filter(r => r.id != id); // Instant visual removal
+                    rawData = rawData.filter(r => r.id != id); 
                     processData();
                 }
             } catch(e) { alert("Audit system error."); }
         }
 
+        // ==========================================
+        // AI ORACLE (UPGRADED WITH HEURISTICS)
+        // ==========================================
         async function fetchComments() {
             try {
                 const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
@@ -857,8 +884,10 @@
             } 
         }
         async function processOracleQuery(query) {
-            let response = "I am the RCC Oracle. I analyze your live production data locally. Try asking: 'What is the status of Line 1?', 'What is our worst downtime cause?', or 'What is total scrap?'";
-            if (query.includes("status") && query.includes("line")) {
+            let response = "I am the RCC Oracle. I analyze your live production data locally. Try asking: 'What is the status of Line 1?', 'Analyze downtime', 'Analyze scrap', or 'Analyze can sizes'.";
+            const q = query.toLowerCase();
+
+            if (q.includes("status") && q.includes("line")) {
                 const lineMatch = query.match(/line \d/);
                 if (lineMatch) {
                     const lineName = lineMatch[0]; const rs = filteredData.filter(x => x.line && x.line.toLowerCase().includes(lineName.toLowerCase()));
@@ -869,12 +898,45 @@
                     } else { response = `I do not see any active production logs for ${lineName.toUpperCase()} in the current timeframe.`; }
                 }
             }
-            else if (query.includes("worst") || query.includes("downtime") || query.includes("cause")) {
-                let m=0, e=0, mat=0, q=0, p=0;
-                filteredData.forEach(r => { m+=(r.down_mech||0); e+=(r.down_elec||0); mat+=(r.down_mat||0); q+=(r.down_qc||0); p+=(r.down_pack||0); });
-                const reasons = { "Mechanical": m, "Electrical": e, "Material Shortage": mat, "Quality Control": q, "Packer": p };
+            else if (q.includes("worst") || q.includes("downtime") || q.includes("cause")) {
+                let m=0, e=0, mat=0, qc=0, p=0; let totalRun = 0;
+                filteredData.forEach(r => { m+=(r.down_mech||0); e+=(r.down_elec||0); mat+=(r.down_mat||0); qc+=(r.down_qc||0); p+=(r.down_pack||0); totalRun += (r.run||480); });
+                const totalDown = m+e+mat+qc+p;
+                const downPercent = totalRun > 0 ? ((totalDown/totalRun)*100).toFixed(1) : 0;
+                const reasons = { "Mechanical": m, "Electrical": e, "Material Shortage": mat, "Quality Control": qc, "Packer": p };
                 const worst = Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b);
-                if (reasons[worst] > 0) { response = `Diagnostic scan complete. Your primary bottleneck is **${worst}**, accounting for **${reasons[worst]} minutes** of lost production time in this view.`; } else { response = "No significant downtime recorded in the current timeframe."; }
+                if (totalDown > 0) {
+                    response = `Diagnostic complete. Total downtime is **${totalDown} mins** (${downPercent}% of scheduled run time). `;
+                    if (downPercent > 10) response += `⚠️ **ALERT:** This is EXCESSIVE. `; else response += `✅ This is within healthy limits. `;
+                    response += `Primary bottleneck: **${worst}** (${reasons[worst]} mins).`;
+                } else { response = "No significant downtime recorded in the current timeframe."; }
+            }
+            else if (q.includes("scrap") || q.includes("reject")) {
+                let w=0, s=0, f=0, seam=0; let totalYield = 0;
+                filteredData.forEach(r => { w+=(r.defect_weld||0); s+=(r.defect_scratch||0); f+=(r.defect_flange||0); seam+=(r.defect_seam||0); totalYield += (r.actual||0); });
+                const totalScrap = w+s+f+seam;
+                const scrapPercent = totalYield > 0 ? ((totalScrap/totalYield)*100).toFixed(2) : 0;
+                const reasons = { "Bad Welds": w, "Scratches": s, "Flanging Errors": f, "Seaming Errors": seam };
+                const worst = Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b);
+                
+                response = `Total QC Scrap is **${totalScrap.toLocaleString()} cans** (${scrapPercent}% of yield). `;
+                if (scrapPercent > 2) response += `⚠️ **ALERT:** Scrap rate is TOO HIGH. `; else response += `✅ Scrap rate is healthy. `;
+                response += `Highest failure mode is **${worst}** (${reasons[worst]} units).`;
+            }
+            else if (q.includes("size") || q.includes("sizes")) {
+                let sizes = {};
+                filteredData.forEach(r => {
+                    const sz = r.can_size || "Standard";
+                    if(!sizes[sz]) sizes[sz] = {a:0, t:0};
+                    sizes[sz].a += (r.actual||0); sizes[sz].t += (r.target||0);
+                });
+                if(Object.keys(sizes).length > 0) {
+                    response = "Accumulated Output by Can Size:\n";
+                    for(let sz in sizes) {
+                        let eff = sizes[sz].t > 0 ? ((sizes[sz].a/sizes[sz].t)*100).toFixed(1) : 0;
+                        response += `• **${sz}**: ${sizes[sz].a.toLocaleString()} cans (${eff}% Eff)\n`;
+                    }
+                } else { response = "No can sizes recorded in current data."; }
             }
             await sb.from('live_comments').insert([{ user_name: 'RCC ORACLE', message: response, module: 'production' }]); fetchComments();
         }
@@ -898,12 +960,78 @@
             } catch(err) { display.innerHTML = `<span style='color:var(--danger);'><b>DB ERROR:</b> Check if 'access_logs' table exists.</span>`; }
         }
 
+        // ==========================================
+        // AI REPORT MAKER (UPGRADED)
+        // ==========================================
         function generateSmartReportText() {
             if(filteredData.length === 0) return "No data found.";
             let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
-            const yield = filteredData.reduce((s,r)=>s+(r.actual||0),0); const target = filteredData.reduce((s,r)=>s+(r.target||0),0); const eff = target > 0 ? (yield/target*100).toFixed(1) : 0;
-            return `SUBJECT: RCC Production Report - ${modeText}\n\nTotal Output: ${yield.toLocaleString()} cans\nPlant Efficiency: ${eff}%\n`;
+            
+            const yield = filteredData.reduce((s,r)=>s+(r.actual||0),0); 
+            const target = filteredData.reduce((s,r)=>s+(r.target||0),0); 
+            const down = filteredData.reduce((s,r)=>s+getTotalDown(r),0);
+            const scrap = filteredData.reduce((s,r)=>s+getTotalScrap(r),0);
+            const runTime = filteredData.reduce((s,r)=>s+(r.run||480),0);
+            const eff = target > 0 ? (yield/target*100).toFixed(1) : 0;
+
+            let lines = {}; let sizes = {};
+            const downReasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
+            const scrapReasons = { "Bad Welds": 0, "Scratches": 0, "Flanging Errors": 0, "Seaming Errors": 0 };
+            
+            filteredData.forEach(r => { 
+                const safeLine = r.line || "Unknown Asset";
+                const safeSize = r.can_size || "Standard";
+
+                if(!lines[safeLine]) lines[safeLine] = {a:0, t:0}; 
+                lines[safeLine].a += (r.actual||0); lines[safeLine].t += (r.target||0); 
+
+                if(!sizes[safeSize]) sizes[safeSize] = {a:0, t:0, d:0, s:0};
+                sizes[safeSize].a += (r.actual||0); sizes[safeSize].t += (r.target||0);
+                sizes[safeSize].d += getTotalDown(r); sizes[safeSize].s += getTotalScrap(r);
+
+                downReasons.Mechanical += (r.down_mech || 0); downReasons.Electrical += (r.down_elec || 0); downReasons.Material += (r.down_mat || 0); downReasons.QC += (r.down_qc || 0); downReasons.Packer += (r.down_pack || 0); 
+                scrapReasons["Bad Welds"] += (r.defect_weld||0); scrapReasons["Scratches"] += (r.defect_scratch||0); scrapReasons["Flanging Errors"] += (r.defect_flange||0); scrapReasons["Seaming Errors"] += (r.defect_seam||0);
+            });
+            
+            let worstLine = "None"; let worstEff = 100;
+            for(let l in lines) { let lEff = lines[l].t > 0 ? (lines[l].a / lines[l].t * 100) : 100; if(lEff < worstEff) { worstEff = lEff; worstLine = l; } }
+            let topDownReason = Object.keys(downReasons).reduce((a,b) => downReasons[a] > downReasons[b] ? a : b);
+            let topScrapReason = Object.keys(scrapReasons).reduce((a,b) => scrapReasons[a] > scrapReasons[b] ? a : b);
+
+            const downPercent = runTime > 0 ? ((down / runTime) * 100).toFixed(1) : 0;
+            const scrapPercent = yield > 0 ? ((scrap / yield) * 100).toFixed(2) : 0;
+
+            let text = `SUBJECT: RCC Production Analytics Report - ${modeText}\n\n`;
+            text += `Dear Management Team,\n\n`;
+            text += `Please find the automated production analysis below.\n\n`;
+            text += `📊 1. EXECUTIVE SUMMARY\n--------------------------------------------------\n`;
+            text += `• Total Output: ${yield.toLocaleString()} cans\n`;
+            text += `• Target Output: ${target.toLocaleString()} cans\n`;
+            text += `• Plant Efficiency: ${eff}%\n`;
+            text += `• Total Downtime: ${down.toLocaleString()} minutes\n`;
+            text += `• Total QC Scrap: ${scrap.toLocaleString()} cans\n\n`;
+
+            text += `🔬 2. DATA ANALYST HEURISTIC INSIGHTS\n--------------------------------------------------\n`;
+            if (downPercent > 10) text += `⚠️ DOWNTIME ALERT: Downtime accounts for ${downPercent}% of scheduled run time. This is excessive. Immediate intervention required for ${topDownReason} delays.\n`;
+            else text += `✅ DOWNTIME HEALTHY: Downtime is within acceptable limits (${downPercent}% of run time).\n`;
+
+            if (scrapPercent > 2) text += `⚠️ QC SCRAP ALERT: Scrap rate is high at ${scrapPercent}% of total yield. Major contributor is ${topScrapReason}.\n`;
+            else text += `✅ QC SCRAP HEALTHY: Scrap rate is highly efficient at ${scrapPercent}% of total yield.\n`;
+
+            if(worstLine !== "None") text += `Asset Bottleneck: ${worstLine} was the lowest performing asset (${worstEff.toFixed(1)}% efficiency).\n\n`;
+
+            text += `📦 3. ACCUMULATED CAN SIZE BREAKDOWN\n--------------------------------------------------\n`;
+            for(let sz in sizes) {
+                let szEff = sizes[sz].t > 0 ? ((sizes[sz].a/sizes[sz].t)*100).toFixed(1) : 0;
+                text += `[Size: ${sz}]\n`;
+                text += `   • Output: ${sizes[sz].a.toLocaleString()} / Target: ${sizes[sz].t.toLocaleString()} (${szEff}%)\n`;
+                text += `   • Downtime: ${sizes[sz].d} mins  |  Scrap: ${sizes[sz].s} units\n\n`;
+            }
+
+            text += `Thank you,\nRCC Bodyline AI Oracle\n`;
+            return text;
         }
+
         function generateSmartReport() {
             if(filteredData.length === 0) return alert("No data.");
             document.getElementById('report-content').innerText = generateSmartReportText();
