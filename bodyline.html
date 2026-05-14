@@ -974,7 +974,8 @@
             const runTime = filteredData.reduce((s,r)=>s+(r.run||480),0);
             const eff = target > 0 ? (yield/target*100).toFixed(1) : 0;
 
-            let lines = {}; let sizes = {};
+            let lines = {}; 
+            let lineSizes = {}; // NEW: Nested Line-to-Size object
             const downReasons = { "Mechanical": 0, "Electrical": 0, "Material": 0, "QC": 0, "Packer": 0 };
             const scrapReasons = { "Bad Welds": 0, "Scratches": 0, "Flanging Errors": 0, "Seaming Errors": 0 };
             
@@ -985,9 +986,14 @@
                 if(!lines[safeLine]) lines[safeLine] = {a:0, t:0}; 
                 lines[safeLine].a += (r.actual||0); lines[safeLine].t += (r.target||0); 
 
-                if(!sizes[safeSize]) sizes[safeSize] = {a:0, t:0, d:0, s:0};
-                sizes[safeSize].a += (r.actual||0); sizes[safeSize].t += (r.target||0);
-                sizes[safeSize].d += getTotalDown(r); sizes[safeSize].s += getTotalScrap(r);
+                // Track accumulated data per Can Size, NESTED inside each Line
+                if(!lineSizes[safeLine]) lineSizes[safeLine] = {};
+                if(!lineSizes[safeLine][safeSize]) lineSizes[safeLine][safeSize] = {a:0, t:0, d:0, s:0};
+                
+                lineSizes[safeLine][safeSize].a += (r.actual||0); 
+                lineSizes[safeLine][safeSize].t += (r.target||0);
+                lineSizes[safeLine][safeSize].d += getTotalDown(r); 
+                lineSizes[safeLine][safeSize].s += getTotalScrap(r);
 
                 downReasons.Mechanical += (r.down_mech || 0); downReasons.Electrical += (r.down_elec || 0); downReasons.Material += (r.down_mat || 0); downReasons.QC += (r.down_qc || 0); downReasons.Packer += (r.down_pack || 0); 
                 scrapReasons["Bad Welds"] += (r.defect_weld||0); scrapReasons["Scratches"] += (r.defect_scratch||0); scrapReasons["Flanging Errors"] += (r.defect_flange||0); scrapReasons["Seaming Errors"] += (r.defect_seam||0);
@@ -1020,12 +1026,17 @@
 
             if(worstLine !== "None") text += `Asset Bottleneck: ${worstLine} was the lowest performing asset (${worstEff.toFixed(1)}% efficiency).\n\n`;
 
-            text += `📦 3. ACCUMULATED CAN SIZE BREAKDOWN\n--------------------------------------------------\n`;
-            for(let sz in sizes) {
-                let szEff = sizes[sz].t > 0 ? ((sizes[sz].a/sizes[sz].t)*100).toFixed(1) : 0;
-                text += `[Size: ${sz}]\n`;
-                text += `   • Output: ${sizes[sz].a.toLocaleString()} / Target: ${sizes[sz].t.toLocaleString()} (${szEff}%)\n`;
-                text += `   • Downtime: ${sizes[sz].d} mins  |  Scrap: ${sizes[sz].s} units\n\n`;
+            text += `📦 3. CAN SIZE BREAKDOWN (PER LINE)\n--------------------------------------------------\n`;
+            for(let line in lineSizes) {
+                text += `🏭 ${line.toUpperCase()}\n`;
+                for(let sz in lineSizes[line]) {
+                    let szData = lineSizes[line][sz];
+                    let szEff = szData.t > 0 ? ((szData.a/szData.t)*100).toFixed(1) : 0;
+                    text += `   [Size: ${sz}]\n`;
+                    text += `      • Output: ${szData.a.toLocaleString()} / Target: ${szData.t.toLocaleString()} (${szEff}%)\n`;
+                    text += `      • Downtime: ${szData.d} mins  |  Scrap: ${szData.s} units\n`;
+                }
+                text += `\n`;
             }
 
             text += `Thank you,\nRCC Bodyline AI Oracle\n`;
