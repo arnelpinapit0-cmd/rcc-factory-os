@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v25.2 Integrated Sizes</title>
+    <title>RCC Bodyline OS | v25.3 Factory Synced</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -267,7 +267,7 @@
                 </div>
                 <div style="overflow-y:auto; height: 400px;">
                     <table id="log-table">
-                        <thead><tr><th>Date</th><th>Asset</th><th>Size</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Total Down</th><th>Scrap</th><th class="admin-only">Action</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Shift</th><th>Asset</th><th>Size</th><th>Actual</th><th>Target</th><th>Eff%</th><th>Total Down</th><th>Scrap</th><th class="admin-only">Action</th></tr></thead>
                         <tbody id="log-body"></tbody>
                     </table>
                 </div>
@@ -320,6 +320,14 @@
         <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin-bottom: 5px;">📝 Production Notepad</h4>
         <textarea id="prod-notepad" placeholder="Shift Reminders..." oninput="saveNotes()" style="height: 100px; margin-bottom: 20px;"></textarea>
 
+        <div id="access-log-section" style="margin-top: 20px; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                <h4 style="color:var(--text-dim); font-size: 11px; text-transform: uppercase; margin:0;">🔒 Access Logs</h4>
+                <button onclick="fetchAccessLogs()" style="background:var(--accent); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:9px; cursor:pointer; font-weight:bold;">↻ REFRESH</button>
+            </div>
+            <div id="access-log-display" style="font-family:monospace; font-size:10px; height:120px; overflow-y:auto; background:var(--bg); padding:10px; border-radius: 6px; border: 1px solid var(--border);"></div>
+        </div>
+
         <button class="btn" style="width:100%; margin-top:20px; background: var(--border); color: var(--text);" onclick="toggleMenu()">CLOSE MENU</button>
     </div>
 
@@ -357,31 +365,42 @@
         Chart.defaults.color = '#64748b';
 
         // ==========================================
-        // SMART CAN SIZE MAPPING ALGORITHM
+        // PRECISE FACTORY CAN SIZE MAPPING 
         // ==========================================
         const lineSizeMap = {
-            "Line 1": ["202 x 204", "211 x 400"],
-            "Line 2": ["300 x 407", "307 x 409"],
-            "Line 3": ["307 x 409", "401 x 411"],
-            "Line 4": ["401 x 411", "603 x 700"],
-            "Line 5": ["603 x 700"],
-            "Line 6": ["211 x 400", "300 x 407"],
+            "Line 1": [
+                "211 x 300 (0.15)", "211 x 308 (0.15)", "300 x 400 (0.17)", "214/300 x 407 (0.17)", "300 x 407 (0.17)"
+            ],
+            "Line 2": [
+                "202 x 205 (0.14)", "200/202 x 205 (0.14)", "202 x 306 (0.14)", "200/202 x 306 (0.14)", "202 x 312 (0.14)", "200/202 x 312 (0.14)", "300 x 400 (0.17)", "300 x 407 (0.17)", "214/300 x 407 (0.17)"
+            ],
+            "Line 3": [
+                "202 x 205 (0.14)", "200/202 x 205 (0.14)", "202 x 306 (0.14)", "200/202 x 306 (0.14)", "202 x 312 (0.14)", "200/202 x 312 (0.14)"
+            ],
+            "Line 4": [
+                "202 x 306 (0.15)", "200/202 x 306 (0.14)", "200/202 x 312 (0.14)", "202 x 306 (0.14)"
+            ],
+            "Line 5": [
+                "200/202 x 306 (0.14)", "200/202 x 312 (0.15)", "202 x 312 (0.14)", "202 x 306 (0.14)"
+            ],
+            "Line 6": [
+                "202 x 306 (0.14)", "200/202 x 306 (0.14)", "200/202 x 312 (0.14)"
+            ],
             "SLITTER": ["Flat Sheets (N/A)"]
         };
 
         function updateCanSizes() {
             const assetSelect = document.getElementById('f-line').value;
             const sizeSelect = document.getElementById('f-size');
-            sizeSelect.innerHTML = ""; // Clear old options
+            sizeSelect.innerHTML = ""; 
 
             if(!assetSelect) {
                 sizeSelect.innerHTML = `<option value="">Select Asset First</option>`;
                 return;
             }
 
-            let foundSizes = ["Standard Multi-Size"]; // Default fallback
+            let foundSizes = ["Standard Multi-Size"]; 
             
-            // Loop through map to find which line was selected
             for (const [lineKey, sizes] of Object.entries(lineSizeMap)) {
                 if (assetSelect.toUpperCase().includes(lineKey.toUpperCase())) {
                     foundSizes = sizes;
@@ -397,14 +416,13 @@
         }
 
         // ==========================================
-        // FIXED THEME TOGGLE (CLOSES MENU & UPDATES CHARTS)
+        // THEME TOGGLE 
         // ==========================================
         function toggleTheme() { 
             document.body.classList.toggle('dark-mode'); 
             const isDark = document.body.classList.contains('dark-mode');
             localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
             
-            // Force Chart.js to immediately repaint grids and fonts
             Chart.defaults.color = isDark ? '#94a3b8' : '#64748b'; 
             const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100,116,139,0.1)';
             
@@ -416,7 +434,7 @@
                 c.update(); 
             }); 
 
-            toggleMenu(); // Automatically close menu so user sees the change immediately
+            toggleMenu(); 
         }
 
         // --- CORE SYSTEM LOAD ---
@@ -456,7 +474,7 @@
             if(isEngineer) document.getElementById('hub-link-container').style.display = 'block';
             else document.getElementById('operator-logout-btn').style.display = 'block';
             
-            if(localStorage.getItem('theme') === 'dark') toggleTheme(); // Restore theme memory
+            if(localStorage.getItem('theme') === 'dark') toggleTheme(); 
 
             setupRealtime(); initCharts(); init3DTwin(); fetchData(); fetchComments(); loadNotes(); loadEmailSettings();
             setInterval(fetchComments, 3000);
@@ -554,7 +572,7 @@
             document.getElementById('log-body').innerHTML = dataToRender.map(r => {
                 let safeShift = r.shift ? r.shift[0] : '-'; 
                 let safeLine = r.line || 'Unknown';
-                let safeSize = r.can_size || 'N/A'; // Pulling the new DB column safely
+                let safeSize = r.can_size || 'N/A'; 
                 let safeEff = r.target > 0 ? (r.actual/r.target*100).toFixed(1) : '0.0';
                 let safeColor = (r.target > 0 && (r.actual/r.target*100) < 80) ? 'var(--danger)' : 'var(--success)';
                 
@@ -601,7 +619,6 @@
             
             charts.qc = new Chart(document.getElementById('qcChart'), { type: 'bar', data: { labels: ['Bad Welds', 'Scratches', 'Flanging'], datasets: [{ label: 'Cans Lost', backgroundColor: '#ef4444', borderRadius: 4, data: [0,0,0] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: cleanScales } });
             
-            // NEW CHART: Can Size Yield Distribution
             charts.sizeDist = new Chart(document.getElementById('sizeChart'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Total Yield', backgroundColor: '#8b5cf6', borderRadius: 4, data: [] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: cleanScales } });
         }
 
@@ -617,7 +634,6 @@
                 m += (r.down_mech || 0); e += (r.down_elec || 0); mat += (r.down_mat || 0); q += (r.down_qc || 0); p += (r.down_pack || 0); 
                 w += (r.defect_weld||0); s += (r.defect_scratch||0); f += (r.defect_flange||0);
                 
-                // Aggregate yield by Can Size
                 const safeSize = r.can_size || "Standard";
                 if(r.actual > 0) sizeYields[safeSize] = (sizeYields[safeSize] || 0) + r.actual;
             });
@@ -759,7 +775,7 @@
         }
 
         // ==========================================
-        // DATA UPLOAD WITH SIZE
+        // DATA UPLOAD & ACCESS LOGS
         // ==========================================
         async function saveData() {
             const btn = document.getElementById('transmit-btn');
@@ -768,7 +784,7 @@
                 date: document.getElementById('f-date').value || new Date().toISOString().split('T')[0],
                 shift: document.getElementById('f-shift').value, 
                 line: document.getElementById('f-line').value,
-                can_size: document.getElementById('f-size').value || 'Standard', // Capturing Size
+                can_size: document.getElementById('f-size').value || 'Standard', 
                 target: parseInt(document.getElementById('f-target').value) || 0, actual: parseInt(document.getElementById('f-actual').value) || 0, 
                 run: parseInt(document.getElementById('f-run').value) || 480, 
                 down_mech: parseInt(document.getElementById('f-mech').value) || 0, down_elec: parseInt(document.getElementById('f-elec').value) || 0,
@@ -783,7 +799,7 @@
             if(!error) { 
                 fetchData(); btn.innerText = "☁️ TRANSMIT RECORD";
                 ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange'].forEach(id => document.getElementById(id).value = '');
-            } else { alert("ACCESS DENIED: Did you run the SQL to add 'can_size'?"); btn.innerText = "☁️ TRANSMIT RECORD"; }
+            } else { alert("ACCESS DENIED: Database locked."); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
 
         async function deleteLog(id) { 
@@ -797,10 +813,27 @@
         function toggleMenu() { 
             const menu = document.getElementById('system-menu'); menu.classList.toggle('active'); 
             document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
+            
+            // FIRE THE ACCESS LOG PING WHEN MENU OPENS
+            if(menu.classList.contains('active')) { fetchAccessLogs(); }
+        }
+
+        async function fetchAccessLogs() {
+            const display = document.getElementById('access-log-display'); 
+            display.innerHTML = "<span style='color:var(--accent); font-weight:bold;'>↻ Pinging Supabase for secure logs...</span>";
+            try {
+                const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
+                if(error) throw error;
+                if(data && data.length > 0) { 
+                    display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); 
+                } else {
+                    display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>";
+                }
+            } catch(err) { display.innerHTML = `<span style='color:var(--danger);'><b>DB ERROR:</b> Check if 'access_logs' table exists.</span>`; }
         }
 
         // ==========================================
-        // RESTORED COMPLIANCE SUITE
+        // COMPLIANCE SUITE
         // ==========================================
         function generateSmartReportText() {
             if(filteredData.length === 0) return "No data found.";
