@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v25.3 Factory Synced</title>
+    <title>RCC Bodyline OS | v25.4 Optimistic UI</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -195,10 +195,6 @@
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
                     <h3 style="margin:0; color:var(--accent); font-size: 13px; text-transform: uppercase;">⚙️ Data Acquisition Terminal</h3>
-                    <div style="display:flex; align-items:center; gap:8px; background:rgba(16, 185, 129, 0.1); padding:5px 12px; border-radius:20px; border:1px solid var(--success);">
-                        <input type="checkbox" id="ai-qc-toggle" style="width:14px; height:14px; margin:0;" onchange="toggleAIQC()"> 
-                        <label style="font-size:10px; font-weight:800; color:var(--success); cursor:pointer;" for="ai-qc-toggle">📷 ENABLE AI VISION AUTO-QC</label>
-                    </div>
                 </div>
                 
                 <div class="admin-form-grid">
@@ -226,9 +222,7 @@
                     </div>
                     
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">CAN SIZE PRODUCED</label>
-                        <select id="f-size">
-                            <option value="">Select Asset First</option>
-                        </select>
+                        <select id="f-size"><option value="">Select Asset First</option></select>
                     </div>
                     
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">RUN TIME (MIN)</label><input type="number" id="f-run" value="480"></div>
@@ -344,6 +338,41 @@
         <button class="btn" style="width:100%; background: transparent; border: 1px solid var(--border); color: var(--text); margin-top:15px;" onclick="closeModals()">CLOSE</button>
     </div>
 
+    <div id="edit-modal" class="modal">
+        <h2 style="margin:0 0 15px 0; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--text);">✏️ EDIT PRODUCTION RECORD</h2>
+        <input type="hidden" id="edit-id">
+        
+        <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">⚠️ ISO COMPLIANCE: REASON REQUIRED</label>
+        <textarea id="edit-reason" rows="2" placeholder="Strictly detail why you are altering this official record..." style="border: 2px solid var(--danger); margin-bottom:15px;"></textarea>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div><label style="font-size:10px; color:var(--text-dim);">CAN SIZE</label>
+                <select id="edit-size" style="padding:10px;"></select>
+            </div>
+            <div><label style="font-size:10px; color:var(--text-dim);">TARGET</label><input type="number" id="edit-target" style="padding:10px;"></div>
+            <div><label style="font-size:10px; color:var(--text-dim);">ACTUAL</label><input type="number" id="edit-actual" style="padding:10px;"></div>
+        </div>
+        <label style="font-size:11px; font-weight:bold; color:var(--accent); display:block; margin-bottom:5px;">EDIT DOWNTIME (MINUTES)</label>
+        <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
+            <div><label style="font-size:9px;">MECH</label><input type="number" id="edit-mech" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">ELEC</label><input type="number" id="edit-elec" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">MATL</label><input type="number" id="edit-mat" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">QC</label><input type="number" id="edit-qc" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">PACK</label><input type="number" id="edit-pack" style="padding:10px;"></div>
+        </div>
+        <label style="font-size:11px; font-weight:bold; color:var(--danger); display:block; margin-bottom:5px;">EDIT QC SCRAP (CANS)</label>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; background:var(--bg); padding:10px; border-radius:6px; margin-bottom:10px;">
+            <div><label style="font-size:9px;">WELDS</label><input type="number" id="edit-scrap-weld" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">SCRATCH</label><input type="number" id="edit-scrap-scratch" style="padding:10px;"></div>
+            <div><label style="font-size:9px;">FLANGE</label><input type="number" id="edit-scrap-flange" style="padding:10px;"></div>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button class="btn btn-primary" onclick="submitEdit()">💾 SIGN & SAVE CHANGES</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text); width:100%;" onclick="closeModals()">CANCEL</button>
+        </div>
+    </div>
+
     <button id="operator-logout-btn" style="display:none; position: fixed; bottom: 20px; left: 20px; background: var(--danger); border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 11px; z-index: 1000;" onclick="logoutSecurely()">🚪 SECURE LOGOUT</button>
 
     <script>
@@ -368,24 +397,12 @@
         // PRECISE FACTORY CAN SIZE MAPPING 
         // ==========================================
         const lineSizeMap = {
-            "Line 1": [
-                "211 x 300 (0.15)", "211 x 308 (0.15)", "300 x 400 (0.17)", "214/300 x 407 (0.17)", "300 x 407 (0.17)"
-            ],
-            "Line 2": [
-                "202 x 205 (0.14)", "200/202 x 205 (0.14)", "202 x 306 (0.14)", "200/202 x 306 (0.14)", "202 x 312 (0.14)", "200/202 x 312 (0.14)", "300 x 400 (0.17)", "300 x 407 (0.17)", "214/300 x 407 (0.17)"
-            ],
-            "Line 3": [
-                "202 x 205 (0.14)", "200/202 x 205 (0.14)", "202 x 306 (0.14)", "200/202 x 306 (0.14)", "202 x 312 (0.14)", "200/202 x 312 (0.14)"
-            ],
-            "Line 4": [
-                "202 x 306 (0.15)", "200/202 x 306 (0.14)", "200/202 x 312 (0.14)", "202 x 306 (0.14)"
-            ],
-            "Line 5": [
-                "200/202 x 306 (0.14)", "200/202 x 312 (0.15)", "202 x 312 (0.14)", "202 x 306 (0.14)"
-            ],
-            "Line 6": [
-                "202 x 306 (0.14)", "200/202 x 306 (0.14)", "200/202 x 312 (0.14)"
-            ],
+            "Line 1": ["211 x 300 (0.15)", "211 x 308 (0.15)", "300 x 400 (0.17)", "214/300 x 407 (0.17)", "300 x 407 (0.17)"],
+            "Line 2": ["202 x 205 (0.14)", "200/202 x 205 (0.14)", "202 x 306 (0.14)", "200/202 x 306 (0.14)", "202 x 312 (0.14)", "200/202 x 312 (0.14)", "300 x 400 (0.17)", "300 x 407 (0.17)", "214/300 x 407 (0.17)"],
+            "Line 3": ["202 x 205 (0.14)", "200/202 x 205 (0.14)", "202 x 306 (0.14)", "200/202 x 306 (0.14)", "202 x 312 (0.14)", "200/202 x 312 (0.14)"],
+            "Line 4": ["202 x 306 (0.15)", "200/202 x 306 (0.14)", "200/202 x 312 (0.14)", "202 x 306 (0.14)"],
+            "Line 5": ["200/202 x 306 (0.14)", "200/202 x 312 (0.15)", "202 x 312 (0.14)", "202 x 306 (0.14)"],
+            "Line 6": ["202 x 306 (0.14)", "200/202 x 306 (0.14)", "200/202 x 312 (0.14)"],
             "SLITTER": ["Flat Sheets (N/A)"]
         };
 
@@ -394,30 +411,18 @@
             const sizeSelect = document.getElementById('f-size');
             sizeSelect.innerHTML = ""; 
 
-            if(!assetSelect) {
-                sizeSelect.innerHTML = `<option value="">Select Asset First</option>`;
-                return;
-            }
+            if(!assetSelect) { sizeSelect.innerHTML = `<option value="">Select Asset First</option>`; return; }
 
             let foundSizes = ["Standard Multi-Size"]; 
-            
             for (const [lineKey, sizes] of Object.entries(lineSizeMap)) {
-                if (assetSelect.toUpperCase().includes(lineKey.toUpperCase())) {
-                    foundSizes = sizes;
-                    break;
-                }
+                if (assetSelect.toUpperCase().includes(lineKey.toUpperCase())) { foundSizes = sizes; break; }
             }
 
             foundSizes.forEach(size => {
-                const opt = document.createElement('option');
-                opt.value = size; opt.innerText = size;
-                sizeSelect.appendChild(opt);
+                const opt = document.createElement('option'); opt.value = size; opt.innerText = size; sizeSelect.appendChild(opt);
             });
         }
 
-        // ==========================================
-        // THEME TOGGLE 
-        // ==========================================
         function toggleTheme() { 
             document.body.classList.toggle('dark-mode'); 
             const isDark = document.body.classList.contains('dark-mode');
@@ -433,11 +438,9 @@
                 }
                 c.update(); 
             }); 
-
             toggleMenu(); 
         }
 
-        // --- CORE SYSTEM LOAD ---
         function applyRBAC(userEmail) {
             currentUser = userEmail;
             if (userEmail.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) { isEngineer = true; localStorage.setItem('rcc_role', 'admin'); } 
@@ -481,7 +484,6 @@
             setMode('daily', document.querySelector('.tab-btn')); 
         }
 
-        // --- DATA ENGINE ---
         function setupRealtime() {
             const dot = document.getElementById('cloud-dot'); const text = document.getElementById('cloud-text');
             try {
@@ -582,7 +584,12 @@
                     <td style="font-size:10px; color:var(--accent); font-weight:bold;">${safeSize}</td>
                     <td>${r.actual}</td><td>${r.target}</td>
                     <td style="font-weight:bold; color:${safeColor}">${safeEff}%</td><td>${getTotalDown(r)}m</td><td><b>${getTotalScrap(r)}</b></td>
-                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}"><div class="action-cell"><button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button></div></td>
+                    <td class="admin-only" style="display:${isEngineer?'table-cell':'none'}">
+                        <div class="action-cell">
+                            <button class="icon-btn" onclick="openEditModal(${r.id})">✏️</button>
+                            <button class="icon-btn" style="color:var(--danger)" onclick="deleteLog(${r.id})">🗑</button>
+                        </div>
+                    </td>
                 </tr>`;
             }).join('');
         }
@@ -710,72 +717,7 @@
         }
 
         // ==========================================
-        // AI ORACLE
-        // ==========================================
-        async function fetchComments() {
-            try {
-                const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
-                if (error) throw error;
-                if(data) {
-                    const chatBox = document.getElementById('chat-box');
-                    const isScrolledToBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 20;
-                    
-                    const newHTML = data.map(c => {
-                        const safeUser = c.user_name || "Unknown";
-                        const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase().includes("engr") || safeUser.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
-                        const canDelete = (safeUser === currentUser) || isEngineer;
-                        const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
-                        
-                        if(safeUser === 'RCC ORACLE') { return `<div class="chat-msg oracle-msg">${delBtn} <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`; } 
-                        else if(safeUser === 'SYSTEM 🤖') { return `<div class="chat-msg" style="border-left-color:var(--danger); background:rgba(239, 68, 68, 0.05);">${delBtn} <b style="color:var(--danger);">${safeUser}</b> <span style="display:block; margin-top:4px; font-weight:bold; color:var(--danger);">${c.message}</span></div>`; }
-                        
-                        return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">${delBtn} <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`;
-                    }).join('');
-                    
-                    if (chatBox.innerHTML !== newHTML) { chatBox.innerHTML = newHTML; if (isScrolledToBottom) { chatBox.scrollTop = chatBox.scrollHeight; } }
-                }
-            } catch (err) { console.error("Chat Error:", err.message); }
-        }
-
-        async function sendComment() { 
-            try {
-                const i = document.getElementById('chat-input'); const msg = i.value.trim();
-                if(msg) { 
-                    const safeUser = currentUser || "Operator"; i.value = ''; 
-                    await sb.from('live_comments').insert([{ user_name: safeUser, message: msg, module: 'production' }]); 
-                    if (msg.toLowerCase().startsWith("@oracle") || msg.toLowerCase().startsWith("/ai")) { setTimeout(() => { processOracleQuery(msg.toLowerCase().replace('@oracle','').replace('/ai','').trim()); }, 500); }
-                    setTimeout(fetchComments, 400); 
-                } 
-            } catch (err) { alert("Failed to send message."); }
-        }
-
-        async function processOracleQuery(query) {
-            let response = "I am the RCC Oracle. I analyze your live production data locally. Try asking: 'What is the status of Line 1?', 'What is our worst downtime cause?', or 'What is total scrap?'";
-            if (query.includes("status") && query.includes("line")) {
-                const lineMatch = query.match(/line \d/);
-                if (lineMatch) {
-                    const lineName = lineMatch[0];
-                    const rs = filteredData.filter(x => x.line && x.line.toLowerCase().includes(lineName.toLowerCase()));
-                    if(rs.length > 0) {
-                        const a = rs.reduce((sum,x)=>sum+(x.actual||0),0); const t = rs.reduce((sum,x)=>sum+(x.target||0),0); const m = rs.reduce((sum,x)=>sum+(x.down_mech||0),0);
-                        const eff = t > 0 ? (a/t*100).toFixed(1) : 0;
-                        response = `Scanning ${lineName.toUpperCase()} telemetry... Current Efficiency: **${eff}%**. Output: ${a.toLocaleString()}/${t.toLocaleString()}. Accumulated Mechanical Downtime: ${m} minutes.`;
-                    } else { response = `I do not see any active production logs for ${lineName.toUpperCase()} in the current timeframe.`; }
-                }
-            }
-            else if (query.includes("worst") || query.includes("downtime") || query.includes("cause")) {
-                let m=0, e=0, mat=0, q=0, p=0;
-                filteredData.forEach(r => { m+=(r.down_mech||0); e+=(r.down_elec||0); mat+=(r.down_mat||0); q+=(r.down_qc||0); p+=(r.down_pack||0); });
-                const reasons = { "Mechanical": m, "Electrical": e, "Material Shortage": mat, "Quality Control": q, "Packer": p };
-                const worst = Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b);
-                if (reasons[worst] > 0) { response = `Diagnostic scan complete. Your primary bottleneck is **${worst}**, accounting for **${reasons[worst]} minutes** of lost production time in this view.`; } else { response = "No significant downtime recorded in the current timeframe."; }
-            }
-            await sb.from('live_comments').insert([{ user_name: 'RCC ORACLE', message: response, module: 'production' }]);
-            fetchComments();
-        }
-
-        // ==========================================
-        // DATA UPLOAD & ACCESS LOGS
+        // DATA UPLOAD & OPTIMISTIC "INSTANT POP" RENDERING
         // ==========================================
         async function saveData() {
             const btn = document.getElementById('transmit-btn');
@@ -795,26 +737,153 @@
             if (entry.target === 0 || entry.actual === 0 || !entry.line) { alert("Target, Actual, and Line are required."); return; }
             
             btn.innerText = "UPLOADING...";
-            const { error } = await sb.from('production_logs').insert([entry]);
-            if(!error) { 
-                fetchData(); btn.innerText = "☁️ TRANSMIT RECORD";
+            // Using .select() returns the inserted data WITH its new ID so we can edit/delete it instantly
+            const { data, error } = await sb.from('production_logs').insert([entry]).select();
+            if(!error && data) { 
+                // ✨ OPTIMISTIC UI RENDER: Instantly pop it into the live arrays without waiting for a full fetch
+                rawData.unshift(data[0]); 
+                processData(); // Instantly visually refresh the dashboard
+                
+                btn.innerText = "☁️ TRANSMIT RECORD";
                 ['f-actual', 'f-mech', 'f-elec', 'f-mat', 'f-qc', 'f-pack', 'f-scrap-weld', 'f-scrap-scratch', 'f-scrap-flange'].forEach(id => document.getElementById(id).value = '');
             } else { alert("ACCESS DENIED: Database locked."); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
 
-        async function deleteLog(id) { 
-            if(confirm("Permanently delete this record?")) {
-                const { error } = await sb.from('production_logs').delete().eq('id', id); 
-                if(error) alert("ACCESS DENIED."); else fetchData(); 
+        // ==========================================
+        // EDIT MODULE RESTORED (ISO COMPLIANT)
+        // ==========================================
+        function openEditModal(id) {
+            const log = rawData.find(r => r.id === id); if(!log) return;
+            document.getElementById('edit-id').value = id; 
+            document.getElementById('edit-reason').value = ''; 
+            
+            // Re-populate the specific Can Size dropdown based on the machine that was logged
+            const sizeSelect = document.getElementById('edit-size');
+            sizeSelect.innerHTML = ""; 
+            let foundSizes = ["Standard Multi-Size"]; 
+            for (const [lineKey, sizes] of Object.entries(lineSizeMap)) {
+                if (log.line && log.line.toUpperCase().includes(lineKey.toUpperCase())) { foundSizes = sizes; break; }
             }
+            foundSizes.forEach(s => {
+                const opt = document.createElement('option'); opt.value = s; opt.innerText = s;
+                if(s === log.can_size) opt.selected = true; // Auto-select what they currently have
+                sizeSelect.appendChild(opt);
+            });
+            // Fallback if they logged a size that isn't standard
+            if(!foundSizes.includes(log.can_size) && log.can_size) {
+                const opt = document.createElement('option'); opt.value = log.can_size; opt.innerText = log.can_size; opt.selected = true; sizeSelect.appendChild(opt);
+            }
+
+            document.getElementById('edit-target').value = log.target; document.getElementById('edit-actual').value = log.actual;
+            document.getElementById('edit-mech').value = log.down_mech || 0; document.getElementById('edit-elec').value = log.down_elec || 0; document.getElementById('edit-mat').value = log.down_mat || 0;
+            document.getElementById('edit-qc').value = log.down_qc || 0; document.getElementById('edit-pack').value = log.down_pack || 0; 
+            document.getElementById('edit-scrap-weld').value = log.defect_weld || 0; document.getElementById('edit-scrap-scratch').value = log.defect_scratch || 0; document.getElementById('edit-scrap-flange').value = log.defect_flange || 0;
+            
+            document.getElementById('edit-modal').style.display = 'block'; document.getElementById('main-overlay').style.display = 'block';
         }
+
+        async function submitEdit() {
+            const id = document.getElementById('edit-id').value;
+            const reason = document.getElementById('edit-reason').value.trim();
+            if(!reason) { alert("🛑 ISO COMPLIANCE BLOCK: You must state the exact reason for altering this official record."); return; }
+
+            const log = rawData.find(r => r.id == id);
+            const updates = { 
+                can_size: document.getElementById('edit-size').value,
+                target: parseInt(document.getElementById('edit-target').value)||0, actual: parseInt(document.getElementById('edit-actual').value)||0, 
+                down_mech: parseInt(document.getElementById('edit-mech').value)||0, down_elec: parseInt(document.getElementById('edit-elec').value)||0, down_mat: parseInt(document.getElementById('edit-mat').value)||0, down_qc: parseInt(document.getElementById('edit-qc').value)||0, down_pack: parseInt(document.getElementById('edit-pack').value)||0, 
+                defect_weld: parseInt(document.getElementById('edit-scrap-weld').value)||0, defect_scratch: parseInt(document.getElementById('edit-scrap-scratch').value)||0, defect_flange: parseInt(document.getElementById('edit-scrap-flange').value)||0
+            };
+
+            try {
+                const auditEntry = {
+                    action: 'UPDATE_PRODUCTION', record_id: id, machine: log.line,
+                    old_value: `Size: ${log.can_size}, Yield: ${log.actual}, Target: ${log.target}`,
+                    new_value: `Size: ${updates.can_size}, Yield: ${updates.actual}, Target: ${updates.target}`,
+                    reason: reason, changed_by: currentUser || 'Admin'
+                };
+                await sb.from('audit_logs').insert([auditEntry]);
+                const { error } = await sb.from('production_logs').update(updates).eq('id', id);
+                if(!error) { closeModals(); await fetchData(); } else { alert("ACCESS DENIED: Database locked."); }
+            } catch(e) { alert("Audit system error. Action aborted."); }
+        }
+
+        async function deleteLog(id) { 
+            const reason = prompt("🛑 ISO COMPLIANCE CHECK: State reason for permanent deletion:");
+            if(!reason) { alert("Deletion cancelled. A valid reason is strictly required."); return; }
+            const log = rawData.find(r => r.id == id);
+            try {
+                const auditEntry = {
+                    action: 'DELETE_PRODUCTION', record_id: id, machine: log.line,
+                    old_value: `Date: ${log.date}, Yield: ${log.actual}, Size: ${log.can_size}`,
+                    new_value: `DELETED`, reason: reason, changed_by: currentUser || 'Admin'
+                };
+                await sb.from('audit_logs').insert([auditEntry]);
+                const { error } = await sb.from('production_logs').delete().eq('id', id); 
+                if(!error) {
+                    rawData = rawData.filter(r => r.id != id); // Instant visual removal
+                    processData();
+                }
+            } catch(e) { alert("Audit system error."); }
+        }
+
+        async function fetchComments() {
+            try {
+                const { data, error } = await sb.from('live_comments').select('*').eq('module', 'production').order('created_at', {ascending: true}).limit(50);
+                if (error) throw error;
+                if(data) {
+                    const chatBox = document.getElementById('chat-box');
+                    const isScrolledToBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 20;
+                    const newHTML = data.map(c => {
+                        const safeUser = c.user_name || "Unknown";
+                        const isAdmin = safeUser.toLowerCase().includes("admin") || safeUser.toLowerCase().includes("engr") || safeUser.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+                        const canDelete = (safeUser === currentUser) || isEngineer;
+                        const delBtn = canDelete ? `<button class="del-msg-btn" onclick="deleteComment(${c.id})">✖</button>` : '';
+                        if(safeUser === 'RCC ORACLE') { return `<div class="chat-msg oracle-msg">${delBtn} <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`; } 
+                        else if(safeUser === 'SYSTEM 🤖') { return `<div class="chat-msg" style="border-left-color:var(--danger); background:rgba(239, 68, 68, 0.05);">${delBtn} <b style="color:var(--danger);">${safeUser}</b> <span style="display:block; margin-top:4px; font-weight:bold; color:var(--danger);">${c.message}</span></div>`; }
+                        return `<div class="chat-msg" style="${isAdmin ? 'border-left-color:var(--accent)' : 'border-left-color:var(--border)'}">${delBtn} <b>${safeUser}</b> <span style="display:block; margin-top:4px;">${c.message}</span></div>`;
+                    }).join('');
+                    if (chatBox.innerHTML !== newHTML) { chatBox.innerHTML = newHTML; if (isScrolledToBottom) { chatBox.scrollTop = chatBox.scrollHeight; } }
+                }
+            } catch (err) {}
+        }
+        async function sendComment() { 
+            const i = document.getElementById('chat-input'); const msg = i.value.trim();
+            if(msg) { 
+                const safeUser = currentUser || "Operator"; i.value = ''; 
+                await sb.from('live_comments').insert([{ user_name: safeUser, message: msg, module: 'production' }]); 
+                if (msg.toLowerCase().startsWith("@oracle") || msg.toLowerCase().startsWith("/ai")) { setTimeout(() => { processOracleQuery(msg.toLowerCase().replace('@oracle','').replace('/ai','').trim()); }, 500); }
+                setTimeout(fetchComments, 400); 
+            } 
+        }
+        async function processOracleQuery(query) {
+            let response = "I am the RCC Oracle. I analyze your live production data locally. Try asking: 'What is the status of Line 1?', 'What is our worst downtime cause?', or 'What is total scrap?'";
+            if (query.includes("status") && query.includes("line")) {
+                const lineMatch = query.match(/line \d/);
+                if (lineMatch) {
+                    const lineName = lineMatch[0]; const rs = filteredData.filter(x => x.line && x.line.toLowerCase().includes(lineName.toLowerCase()));
+                    if(rs.length > 0) {
+                        const a = rs.reduce((sum,x)=>sum+(x.actual||0),0); const t = rs.reduce((sum,x)=>sum+(x.target||0),0); const m = rs.reduce((sum,x)=>sum+(x.down_mech||0),0);
+                        const eff = t > 0 ? (a/t*100).toFixed(1) : 0;
+                        response = `Scanning ${lineName.toUpperCase()} telemetry... Current Efficiency: **${eff}%**. Output: ${a.toLocaleString()}/${t.toLocaleString()}. Accumulated Mechanical Downtime: ${m} minutes.`;
+                    } else { response = `I do not see any active production logs for ${lineName.toUpperCase()} in the current timeframe.`; }
+                }
+            }
+            else if (query.includes("worst") || query.includes("downtime") || query.includes("cause")) {
+                let m=0, e=0, mat=0, q=0, p=0;
+                filteredData.forEach(r => { m+=(r.down_mech||0); e+=(r.down_elec||0); mat+=(r.down_mat||0); q+=(r.down_qc||0); p+=(r.down_pack||0); });
+                const reasons = { "Mechanical": m, "Electrical": e, "Material Shortage": mat, "Quality Control": q, "Packer": p };
+                const worst = Object.keys(reasons).reduce((a, b) => reasons[a] > reasons[b] ? a : b);
+                if (reasons[worst] > 0) { response = `Diagnostic scan complete. Your primary bottleneck is **${worst}**, accounting for **${reasons[worst]} minutes** of lost production time in this view.`; } else { response = "No significant downtime recorded in the current timeframe."; }
+            }
+            await sb.from('live_comments').insert([{ user_name: 'RCC ORACLE', message: response, module: 'production' }]); fetchComments();
+        }
+
         async function deleteComment(id) { if(confirm("Remove message?")) { await sb.from('live_comments').delete().eq('id', id); fetchComments(); } }
 
         function toggleMenu() { 
             const menu = document.getElementById('system-menu'); menu.classList.toggle('active'); 
             document.getElementById('main-overlay').style.display = menu.classList.contains('active') ? 'block' : 'none'; 
-            
-            // FIRE THE ACCESS LOG PING WHEN MENU OPENS
             if(menu.classList.contains('active')) { fetchAccessLogs(); }
         }
 
@@ -824,17 +893,11 @@
             try {
                 const { data, error } = await sb.from('access_logs').select('*').order('created_at', {ascending:false}).limit(50);
                 if(error) throw error;
-                if(data && data.length > 0) { 
-                    display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); 
-                } else {
-                    display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>";
-                }
+                if(data && data.length > 0) { display.innerHTML = data.map(l => `<div style="padding:6px 0; border-bottom:1px solid var(--border);"><span style="color:var(--text-dim); font-size:10px;">[${new Date(l.created_at).toLocaleTimeString()}]</span> <b style="color:var(--text); font-size:11px; margin-left:5px;">${l.user_name || 'Unknown'}</b></div>`).join(''); } 
+                else { display.innerHTML = "<span style='color:var(--text-dim);'>No access logs recorded yet.</span>"; }
             } catch(err) { display.innerHTML = `<span style='color:var(--danger);'><b>DB ERROR:</b> Check if 'access_logs' table exists.</span>`; }
         }
 
-        // ==========================================
-        // COMPLIANCE SUITE
-        // ==========================================
         function generateSmartReportText() {
             if(filteredData.length === 0) return "No data found.";
             let modeText = currentMode === 'custom' ? "CUSTOM RANGE" : currentMode.toUpperCase();
