@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCC Bodyline OS | v26.1 Quality & Machine Tracking</title>
+    <title>RCC Bodyline OS | v26.2 Auto-Targets & Security</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -230,17 +230,11 @@
                         <select id="f-line" onchange="updateCanSizes()">
                             <option value="">Select Line...</option>
                             <option>Line 1 / SOUCAN 640</option>
-                            <option>Line 1 / FREI-APC & YUAN-ROX OVEN</option>
                             <option>Line 2 / CANMAN X-7</option>
-                            <option>Line 2 / FREI-EPC & YUAN-ROX OVEN</option>
                             <option>Line 3 / SOUCAN 650</option>
-                            <option>Line 3 / FREI-CPC & YUAN-ROX OVEN</option>
                             <option>Line 4 / FBB 5600 KM 13697</option>
-                            <option>Line 4 / FREI-EPC & FREI-PCA OVEN</option>
                             <option>Line 5 / FBB 5600 KM 13640</option>
-                            <option>Line 5 / YUAN-ROX OVEN</option>
                             <option>Line 6 / SOUCAN 650</option>
-                            <option>Line 6 / FREI-CPC & YUAN-ROX OVEN</option>
                             <option>SLITTER / MAWAG</option>
                             <option>SLITTER / S-B34</option>
                         </select>
@@ -253,8 +247,9 @@
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">RUN TIME (MIN)</label><input type="number" id="f-run" value="480"></div>
                 </div>
 
-                <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TARGET OUTPUT</label><input type="number" id="f-target" placeholder="0"></div>
+                <div class="admin-form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--accent);">MACHINE SPEED (CPM)</label><input type="number" id="f-cpm" placeholder="Enter CPM..." oninput="calculateTarget()"></div>
+                    <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">TARGET OUTPUT</label><input type="number" id="f-target" placeholder="Auto-calculated..."></div>
                     <div><label style="font-size:10px; font-weight:bold; color:var(--text-dim);">ACTUAL OUTPUT</label><input type="number" id="f-actual" placeholder="0"></div>
                 </div>
 
@@ -275,7 +270,7 @@
                 <label style="font-size:11px; font-weight:bold; color:var(--warning); display:block; margin-bottom:5px;">REJECT JUSTIFICATION</label>
                 <input type="text" id="f-reject-reason" placeholder="Explain the root cause of the rejected cans..." style="margin-bottom: 15px;">
 
-                <button class="btn btn-primary" id="transmit-btn" onclick="saveData()">☁️ TRANSMIT RECORD (OPTIMISTIC UI)</button>
+                <button class="btn btn-primary" id="transmit-btn" onclick="saveData()">☁️ TRANSMIT RECORD (INSTANT POP)</button>
             </div>
         </div>
 
@@ -406,6 +401,23 @@
 
     <script>
         // =========================================================================
+        // 🔒 SECURITY: 30 MINUTE AUTO-LOGOUT
+        // =========================================================================
+        let inactivityTime = function () {
+            let time;
+            window.onload = resetTimer; document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer; document.onscroll = resetTimer;
+
+            function doLogout() {
+                if(currentUser && currentUser !== "GUEST" && currentUser !== "Anonymous Viewer") {
+                    alert("Security Protocol: Session expired due to 30 minutes of inactivity.");
+                    sb.auth.signOut().then(() => { localStorage.removeItem('rcc_user'); localStorage.removeItem('rcc_role'); window.location.href = 'index.html'; });
+                }
+            }
+            function resetTimer() { clearTimeout(time); time = setTimeout(doLogout, 1800000); } // 30 Mins
+        };
+        inactivityTime();
+
+        // =========================================================================
         // 🔒 THE MASTER KEY
         // =========================================================================
         const MASTER_ADMIN_EMAIL = "Engr.Pinapit@rcc.com"; 
@@ -421,6 +433,14 @@
 
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
+
+        // ==========================================
+        // AUTO-CALCULATE TARGET
+        // ==========================================
+        function calculateTarget() {
+            const cpm = document.getElementById('f-cpm').value;
+            if(cpm) { document.getElementById('f-target').value = Math.round(cpm * 60 * 8.5 * 0.8); }
+        }
 
         // ==========================================
         // PRECISE FACTORY CAN SIZE MAPPING 
@@ -468,7 +488,6 @@
             toggleMenu(); 
         }
 
-        // --- CORE SYSTEM LOAD ---
         function applyRBAC(userEmail) {
             currentUser = userEmail;
             if (userEmail.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) { isEngineer = true; localStorage.setItem('rcc_role', 'admin'); } 
@@ -555,7 +574,7 @@
             else if(currentMode === 'yearly') { start = `${yyyy}-01-01`; end = `${yyyy}-12-31`; }
             
             filteredData = rawData.filter(r => r && r.date && r.date >= start && r.date <= end);
-            loadDailyQualityNotes(); // Refresh daily notes based on selected date (if daily mode)
+            loadDailyQualityNotes(); 
             updateAllVisuals();
         }
 
@@ -576,13 +595,8 @@
             updateAllVisuals();
         }
 
-        // NEW: Specific Machine Downtime calculations (Preserving legacy generic down columns if they exist in DB just in case)
-        function getTotalDown(r) { 
-            return (r.down_welder || 0) + (r.down_seamer || 0) + (r.down_flanger || 0) + (r.down_other || 0) + (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0); 
-        }
-        function getTotalScrap(r) { 
-            return (r.defect_scratch || 0) + (r.defect_flange || 0) + (r.defect_weld || 0) + (r.defect_seam || 0); 
-        }
+        function getTotalDown(r) { return (r.down_welder || 0) + (r.down_seamer || 0) + (r.down_flanger || 0) + (r.down_other || 0) + (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0); }
+        function getTotalScrap(r) { return (r.defect_scratch || 0) + (r.defect_flange || 0) + (r.defect_weld || 0) + (r.defect_seam || 0); }
 
         function updateAllVisuals() {
             updateKPIs(); renderTable(); updateCharts(); update3DTwin();
@@ -637,7 +651,6 @@
 
             charts.prod = new Chart(document.getElementById('prodChart'), { type: 'line', data: { labels: [], datasets: [{ label: 'Actual', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', fill: true, tension: 0.3, data: [] }, { label: 'Target', borderColor: '#94a3b8', borderDash:[4,4], data: [] }]}, options: { responsive: true, maintainAspectRatio: false, animation: animCfg, plugins: { legend: { position: 'top', align: 'end' } }, scales: cleanScales } });
             
-            // Replaced generic labels with specific machines for Doughnut Chart
             charts.util = new Chart(document.getElementById('utilChart'), { 
                 type: 'doughnut', 
                 data: { labels: ['Welding', 'Seamer', 'Flanger', 'Other'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#ef4444', '#f59e0b', '#2563eb', '#64748b'], borderWidth: 2, borderColor: 'var(--surface)', hoverOffset: 10 }]}, 
@@ -672,17 +685,12 @@
             const labels = [...new Set(filteredData.map(r => r.date))].sort();
             charts.prod.data.labels = labels; charts.prod.data.datasets[0].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+(r.actual||0),0)); charts.prod.data.datasets[1].data = labels.map(d => filteredData.filter(r => r.date === d).reduce((s,r)=>s+(r.target||0),0)); charts.prod.update();
 
-            let wD=0, sD=0, fD=0, oD=0; // Downtime
-            let sQ=0, fQ=0; // QC Scraps
-            const sizeYields = {};
+            let wD=0, sD=0, fD=0, oD=0; let sQ=0, fQ=0; const sizeYields = {};
 
             filteredData.forEach(r => { 
                 wD += (r.down_welder || 0); sD += (r.down_seamer || 0); fD += (r.down_flanger || 0); oD += (r.down_other || 0); 
-                // Also roll up legacy downtime categories into "Other" so historical charts don't break
                 oD += (r.down_mech || 0) + (r.down_elec || 0) + (r.down_mat || 0) + (r.down_qc || 0) + (r.down_pack || 0);
-                
                 sQ += (r.defect_scratch||0); fQ += (r.defect_flange||0);
-                // Roll up legacy welds/seaming into Scratches/Flanging or keep them generic (ignoring them per request 2)
                 
                 const safeSize = r.can_size || "Standard";
                 if(r.actual > 0) sizeYields[safeSize] = (sizeYields[safeSize] || 0) + r.actual;
@@ -776,7 +784,6 @@
         // DAILY QUALITY NOTES & LOCAL STORAGE
         // ==========================================
         function saveDailyQualityNotes() {
-            // Tie notes strictly to the selected Date (or today if no custom date)
             const dateKey = currentMode === 'custom' && document.getElementById('date-start').value ? document.getElementById('date-start').value : new Date().toISOString().split('T')[0];
             const dayNotes = document.getElementById('daily-quality-day').value;
             const nightNotes = document.getElementById('daily-quality-night').value;
@@ -830,7 +837,7 @@
                 processData(); 
                 btn.innerText = "☁️ TRANSMIT RECORD (OPTIMISTIC UI)";
                 ['f-actual', 'f-down-weld', 'f-down-seam', 'f-down-flange', 'f-down-other', 'f-scrap-scratch', 'f-scrap-flange', 'f-reject-reason'].forEach(id => document.getElementById(id).value = '');
-            } else { alert("ACCESS DENIED: Did you run the SQL to add 'down_welder' and 'reject_reason'?"); btn.innerText = "☁️ TRANSMIT RECORD"; }
+            } else { alert("ACCESS DENIED: Database locked."); btn.innerText = "☁️ TRANSMIT RECORD"; }
         }
 
         // ==========================================
